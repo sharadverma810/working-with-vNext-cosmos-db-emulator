@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CosmosLearning.Api/CosmosLearning.Api.csproj" />
+    <Project Path="src/CosmosLearning.Bootstrap/CosmosLearning.Bootstrap.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CosmosLearning.Tests/CosmosLearning.Tests.csproj" />
+  </Folder>
+</Solution>

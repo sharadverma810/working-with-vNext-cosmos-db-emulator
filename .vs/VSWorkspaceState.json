@@ -1,0 +1,11 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\src",
+    "\\src\\CosmosLearning.Api",
+    "\\src\\CosmosLearning.Api\\Controllers",
+    "\\src\\CosmosLearning.Bootstrap"
+  ],
+  "SelectedNode": "\\src\\CosmosLearning.Bootstrap\\appsettings.json",
+  "PreviewInSolutionExplorer": false
+}

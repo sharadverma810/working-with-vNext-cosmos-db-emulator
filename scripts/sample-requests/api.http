@@ -1,0 +1,197 @@
+@host = http://localhost:5099
+@productId = product-demo-001
+@category = Electronics
+
+### Create a product
+POST {{host}}/products
+Content-Type: application/json
+
+{
+  "id": "{{productId}}",
+  "productName": "Demo wireless headphones",
+  "description": "A product created through the CRUD API.",
+  "category": "{{category}}",
+  "subCategory": "Audio",
+  "status": "Active",
+  "price": 129.99,
+  "discount": 10.00,
+  "rating": 4.5,
+  "stockQuantity": 25,
+  "isActive": true,
+  "isFeatured": false,
+  "isAvailable": true,
+  "createdAt": "2026-09-05T00:00:00Z",
+  "updatedAt": "2026-09-05T00:00:00Z",
+  "availableFrom": "2026-09-05T00:00:00Z",
+  "warrantyDetails": "1 year limited warranty",
+  "tags": ["wireless", "audio"],
+  "supportedCountries": ["United States", "Canada"],
+  "relatedProducts": [],
+  "manufacturer": {
+    "name": "Contoso Audio",
+    "country": "United States",
+    "website": "https://example.com"
+  },
+  "warehouseLocation": {
+    "country": "United States",
+    "state": "WA",
+    "city": "Seattle",
+    "postalCode": "98101"
+  },
+  "metadata": {
+    "source": "manual-entry",
+    "version": "v1.0",
+    "importedAt": "2026-09-05T00:00:00Z"
+  },
+  "audit": {
+    "createdBy": "sample-request",
+    "updatedBy": null
+  },
+  "reviews": []
+}
+
+### List products
+GET {{host}}/products
+Accept: application/json
+
+### Point read: id and partition key are both required
+GET {{host}}/products/{{productId}}?category={{category}}
+Accept: application/json
+
+### Replace a product
+PUT {{host}}/products/{{productId}}
+Content-Type: application/json
+
+{
+  "id": "{{productId}}",
+  "productName": "Updated demo wireless headphones",
+  "description": "The complete replacement document.",
+  "category": "{{category}}",
+  "subCategory": "Audio",
+  "status": "Active",
+  "price": 119.99,
+  "discount": 15.00,
+  "rating": 4.6,
+  "stockQuantity": 30,
+  "isActive": true,
+  "isFeatured": true,
+  "isAvailable": true,
+  "createdAt": "2026-09-05T00:00:00Z",
+  "updatedAt": "2026-09-05T01:00:00Z",
+  "availableFrom": "2026-09-05T00:00:00Z",
+  "warrantyDetails": "2 year limited warranty",
+  "tags": ["wireless", "audio", "featured"],
+  "supportedCountries": ["United States", "Canada"],
+  "relatedProducts": [],
+  "manufacturer": {
+    "name": "Contoso Audio",
+    "country": "United States",
+    "website": "https://example.com"
+  },
+  "warehouseLocation": {
+    "country": "United States",
+    "state": "WA",
+    "city": "Seattle",
+    "postalCode": "98101"
+  },
+  "metadata": {
+    "source": "sample-request",
+    "version": "v1.1",
+    "importedAt": "2026-09-05T00:00:00Z"
+  },
+  "audit": {
+    "createdBy": "sample-request",
+    "updatedBy": "sample-request"
+  },
+  "reviews": []
+}
+
+### Delete a product: id and partition key are both required
+DELETE {{host}}/products/{{productId}}?category={{category}}
+
+### Actual HTTP QUERY: simple structured category and price filter
+QUERY {{host}}/products/query
+Content-Type: application/json
+Accept: application/json
+
+{
+  "category": "Electronics",
+  "minimumPrice": 100,
+  "maximumPrice": 500,
+  "pageSize": 10
+}
+
+### QUERY: date range using parameterized createdAt bounds
+QUERY {{host}}/products/query
+Content-Type: application/json
+
+{
+  "createdAfter": "2025-01-01T00:00:00Z",
+  "createdBefore": "2025-12-31T23:59:59Z",
+  "pageSize": 10
+}
+
+### QUERY: explicit JSON null values using IS_NULL
+QUERY {{host}}/products/query
+Content-Type: application/json
+
+{
+  "warrantyIsNull": true,
+  "pageSize": 10
+}
+
+### QUERY: missing properties using IS_DEFINED
+QUERY {{host}}/products/query
+Content-Type: application/json
+
+{
+  "warrantyIsMissing": true,
+  "pageSize": 10
+}
+
+### QUERY: nested object fields
+QUERY {{host}}/products/query
+Content-Type: application/json
+
+{
+  "manufacturerCountry": "United States",
+  "metadataSource": "catalog-import",
+  "city": "Seattle",
+  "pageSize": 10
+}
+
+### QUERY: array membership using ARRAY_CONTAINS
+QUERY {{host}}/products/query
+Content-Type: application/json
+
+{
+  "tags": ["wireless"],
+  "supportedCountry": "Canada",
+  "pageSize": 10
+}
+
+### QUERY: nested array filtering using EXISTS over reviews
+QUERY {{host}}/products/query
+Content-Type: application/json
+
+{
+  "reviewMinimumRating": 4,
+  "pageSize": 10
+}
+
+### QUERY: complex combination of category, status, price, rating, and tag
+QUERY {{host}}/products/query
+Content-Type: application/json
+
+{
+  "category": "Electronics",
+  "status": "Active",
+  "minimumPrice": 100,
+  "maximumPrice": 1000,
+  "minimumRating": 4,
+  "isActive": true,
+  "tags": ["wireless"],
+  "sortField": "price",
+  "sortDirection": "ASC",
+  "pageSize": 10
+}
