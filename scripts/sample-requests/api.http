@@ -230,3 +230,66 @@ x-continuation-token: [{"compositeToken":{"token":null,"range":{"min":"","max":"
 GET {{host}}/products/pages?pageSize=1
 Accept: application/json
 x-continuation-token: [{"compositeToken":{"token":null,"range":{"min":"","max":"FF"}},"resumeValues":["product-00006"],"rid":"AgAAAIIAAADuAwAAvQQAAAAAAAA=","skipCount":1}]
+
+##**********************************Error Handling Scenarios**********************************
+### ============================================================
+### ERROR HANDLING - SUCCESS
+### ============================================================
+
+GET {{host}}/error-handling/success
+Accept: application/json
+
+### ============================================================
+### ERROR HANDLING - VALIDATION FAILURE
+### ============================================================
+
+POST {{host}}/error-handling/validation
+Content-Type: application/json
+
+{
+  "name": "",
+  "quantity": 0
+}
+
+### ============================================================
+### ERROR HANDLING - COSMOS NOT FOUND
+### ============================================================
+
+GET {{host}}/error-handling/cosmos/not-found
+Accept: application/json
+
+### ============================================================
+### ERROR HANDLING - COSMOS CONFLICT
+### ============================================================
+
+POST {{host}}/error-handling/cosmos/conflict
+Accept: application/json
+
+### ============================================================
+### ERROR HANDLING - COSMOS THROTTLING
+### ============================================================
+
+GET {{host}}/error-handling/cosmos/throttling
+Accept: application/json
+
+### ============================================================
+### ERROR HANDLING - COSMOS UNAVAILABLE
+### ============================================================
+
+GET {{host}}/error-handling/cosmos/unavailable
+Accept: application/json
+
+### ============================================================
+### ERROR HANDLING - UNEXPECTED ERROR
+### ============================================================
+
+GET {{host}}/error-handling/unexpected
+Accept: application/json
+
+
+### ============================================================
+### ERROR HANDLING - CANCELLATION
+### ============================================================
+
+GET {{host}}/error-handling/cancellation
+Accept: application/json
