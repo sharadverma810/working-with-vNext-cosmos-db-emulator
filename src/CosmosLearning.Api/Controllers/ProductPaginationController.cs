@@ -1,66 +1,106 @@
 ﻿using CosmosLearning.Api.Features.Products.Pagination.Contracts;
+using CosmosLearning.Api.Features.Products.Pagination.Telemetry;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
+using OpenTelemetry.Trace;
+using System.Diagnostics;
 
 namespace CosmosLearning.Api.Features.Products.Pagination;
 
 [ApiController]
 [Route("products/pages")]
-public sealed class ProductPaginationController(ProductPaginationService paginationService, ILogger<ProductPaginationController> logger)
+public sealed class ProductPaginationController(
+    ProductPaginationService paginationService,
+    PaginationTelemetry telemetry,
+    ILogger<ProductPaginationController> logger)
     : ControllerBase
 {
     [HttpGet]
-    [ProducesResponseType(typeof(ProductPageResponse), StatusCodes.Status200OK)]
 
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(
+        typeof(ProductPageResponse),
+        StatusCodes.Status200OK)]
 
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(
+        StatusCodes.Status400BadRequest)]
 
-    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    [ProducesResponseType(
+        StatusCodes.Status500InternalServerError)]
+
+    [ProducesResponseType(
+        StatusCodes.Status503ServiceUnavailable)]
+
     public async Task<IActionResult> GetPage(
-    [FromQuery] int pageSize,
-    [FromQuery] string? category,
-    [FromQuery] bool? isActive,
-    [FromQuery] decimal? minimumPrice,
-    [FromQuery] decimal? maximumPrice,
+        [FromQuery] int pageSize,
+        [FromQuery] string? category,
+        [FromQuery] bool? isActive,
+        [FromQuery] decimal? minimumPrice,
+        [FromQuery] decimal? maximumPrice,
 
-    [FromHeader(Name = "x-continuation-token")]
+        [FromHeader(Name = "x-continuation-token")]
         string? continuationToken,
 
-    CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
-        var request = new ProductPageRequest
+        var request =
+            new ProductPageRequest
+            {
+                PageSize = pageSize,
+
+                Category = category,
+
+                IsActive = isActive,
+
+                MinimumPrice = minimumPrice,
+
+                MaximumPrice = maximumPrice,
+
+                ContinuationToken = continuationToken
+            };
+
+
+        if (!ProductPaginationValidator.TryValidate(
+                request,
+                out var validationError))
         {
-            PageSize = pageSize,
+            telemetry.RecordValidationFailure();
 
-            Category = category,
-
-            IsActive = isActive,
-
-            MinimumPrice = minimumPrice,
-
-            MaximumPrice = maximumPrice,
-
-            ContinuationToken = continuationToken
-        };
-
-        if (!ProductPaginationValidator.TryValidate(request, out var validationError))
-        {
             return BadRequest(new
             {
                 message = validationError
             });
         }
 
+
+        using var activity =
+            telemetry.StartControllerActivity(
+                request);
+
+
+        telemetry.RecordRequest(
+            request);
+
+
         try
         {
             var result =
-                await paginationService.GetPageAsync(request, cancellationToken);
+                await paginationService.GetPageAsync(
+                    request,
+                    cancellationToken);
+
 
             return Ok(result);
         }
         catch (CosmosException exception)
         {
+            activity?.RecordException(
+                exception);
+
+            activity?.SetStatus(
+                ActivityStatusCode.Error,
+                exception.Message);
+
+
             logger.LogError(
                 exception,
                 """
@@ -68,6 +108,7 @@ public sealed class ProductPaginationController(ProductPaginationService paginat
                 StatusCode: {StatusCode}.
                 """,
                 exception.StatusCode);
+
 
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
@@ -79,12 +120,21 @@ public sealed class ProductPaginationController(ProductPaginationService paginat
         }
         catch (HttpRequestException exception)
         {
+            activity?.RecordException(
+                exception);
+
+            activity?.SetStatus(
+                ActivityStatusCode.Error,
+                exception.Message);
+
+
             logger.LogError(
                 exception,
                 """
                 Cosmos DB could not be reached
                 during pagination.
                 """);
+
 
             return StatusCode(
                 StatusCodes.Status503ServiceUnavailable,

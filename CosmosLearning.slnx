@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/observability/">
+    <File Path="docker-compose.yml" />
+    <File Path="otel-collector-config.yaml" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/CosmosLearning.Api/CosmosLearning.Api.csproj" />
     <Project Path="src/CosmosLearning.Bootstrap/CosmosLearning.Bootstrap.csproj" />

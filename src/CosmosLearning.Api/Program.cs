@@ -1,10 +1,16 @@
 using CosmosLearning.Api.Configuration;
 using CosmosLearning.Api.Features.ErrorHandling.Services;
 using CosmosLearning.Api.Features.Products.Pagination;
+using CosmosLearning.Api.Features.Products.Pagination.Telemetry;
 using CosmosLearning.Api.Infrastructure.Cosmos;
 using CosmosLearning.Api.Infrastructure.ErrorHandling;
+using CosmosLearning.Api.Infrastructure.OpenTelemetry;
 using CosmosLearning.Api.Infrastructure.Resilience;
 using Microsoft.Azure.Cosmos;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Exporter;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -83,6 +89,60 @@ builder.Services.AddSingleton(sp =>
         });
 });
 
+
+
+// ------------------------------------------------------------
+// Register OpenTelemetry Sources
+// ------------------------------------------------------------
+builder.Services
+    .AddOpenTelemetry()
+    .ConfigureResource(
+        resource =>
+            resource.AddService(
+                "CosmosLearning.Api"))
+    .WithTracing(
+        tracing =>
+            tracing
+                .AddAspNetCoreInstrumentation()
+
+                .AddSource(
+                    PaginationActivitySource.SourceName)
+                // TEMPORARY:
+                // Write traces to the console.
+                .AddConsoleExporter()
+
+                // ----------------------------------
+                // OTLP Exporter
+                //
+                // Send traces to the OpenTelemetry
+                // Collector running locally.
+                // ----------------------------------
+
+                .AddOtlpExporter(
+                    options =>
+                    {
+                        options.Endpoint =
+                            new Uri(
+                                "http://localhost:4318");
+
+                        options.Protocol =
+                            OtlpExportProtocol.HttpProtobuf;
+                    })
+                )
+    .WithMetrics(
+        metrics =>
+            metrics
+                .AddAspNetCoreInstrumentation()
+
+                .AddMeter(
+                    PaginationMetrics.MeterName)
+                // TEMPORARY:
+                // Write metrics to the console.
+                .AddConsoleExporter()
+                //.AddPrometheusExporter()
+                );
+
+
 // ------------------------------------------------------------
 // Health Checks
 // ------------------------------------------------------------
@@ -100,6 +160,15 @@ builder.Services.AddScoped<ErrorHandlingDemoService>();
 
 // Product Pagination feature
 builder.Services.AddSingleton<ProductPaginationService>();
+
+// ------------------------------------------------------------
+// OpenTelemetry / Logging
+// ------------------------------------------------------------
+builder.Services.AddSingleton<PaginationTelemetry>();
+
+
+builder.Services.AddApplicationOpenTelemetry(builder.Configuration);
+// ------------------------------------------------------------
 
 var app = builder.Build();
 
@@ -151,5 +220,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapHealthChecks("/health");
+app.MapPrometheusScrapingEndpoint();
 
 app.Run();

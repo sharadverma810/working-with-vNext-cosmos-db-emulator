@@ -1,0 +1,39 @@
+services:
+
+  jaeger:
+
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.20.0
+
+    container_name: cosmos-learning-jaeger
+
+    ports:
+
+      - "16686:16686"
+
+
+  otel-collector:
+
+    image: otel/opentelemetry-collector:0.160.0
+
+    container_name: cosmos-learning-otel-collector
+
+    command:
+
+      - "--config=/etc/otelcol/config.yaml"
+
+
+    volumes:
+
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
+
+
+    ports:
+
+      - "4317:4317"
+
+      - "4318:4318"
+
+
+    depends_on:
+
+      - jaeger

@@ -1,216 +1,364 @@
 ﻿using CosmosLearning.Api.Configuration;
 using CosmosLearning.Api.Features.Products.Pagination.Contracts;
+using CosmosLearning.Api.Features.Products.Pagination.Telemetry;
 using CosmosLearning.Api.Models;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Options;
+using OpenTelemetry.Trace;
+using System.Diagnostics;
 
 namespace CosmosLearning.Api.Features.Products.Pagination;
 
 public sealed class ProductPaginationService
 {
     private readonly Container _container;
-    private readonly ILogger<ProductPaginationService> _logger;
+
+    private readonly PaginationTelemetry _telemetry;
+
+    private readonly ILogger<ProductPaginationService>
+        _logger;
+
 
     public ProductPaginationService(
         CosmosClient cosmosClient,
         IOptions<CosmosOptions> cosmosOptions,
+        PaginationTelemetry telemetry,
         ILogger<ProductPaginationService> logger)
     {
-        ArgumentNullException.ThrowIfNull(cosmosClient);
-        ArgumentNullException.ThrowIfNull(cosmosOptions);
-        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(
+            cosmosClient);
 
-        _container = cosmosClient.GetContainer(
-            cosmosOptions.Value.DatabaseName,
-            cosmosOptions.Value.ContainerName);
+        ArgumentNullException.ThrowIfNull(
+            cosmosOptions);
+
+        ArgumentNullException.ThrowIfNull(
+            telemetry);
+
+        ArgumentNullException.ThrowIfNull(
+            logger);
+
+
+        _container =
+            cosmosClient.GetContainer(
+                cosmosOptions.Value.DatabaseName,
+                cosmosOptions.Value.ContainerName);
+
+
+        _telemetry = telemetry;
 
         _logger = logger;
     }
+
 
     public async Task<ProductPageResponse> GetPageAsync(
         ProductPageRequest request,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(
+            request);
 
-        var query = ProductPaginationQueryBuilder.Build(request);
 
-        var requestOptions = new QueryRequestOptions
+        using var serviceActivity =
+            _telemetry.StartServiceActivity(
+                request);
+
+
+        var serviceStopwatch =
+            Stopwatch.StartNew();
+
+
+        try
         {
-            MaxItemCount = request.PageSize
-        };
+            // --------------------------------------
+            // Build Query
+            // --------------------------------------
 
-        using FeedIterator<ProductDocument> iterator =
-            _container.GetItemQueryIterator<ProductDocument>(
-                query,
-                request.ContinuationToken,
-                requestOptions);
+            var query =
+                ProductPaginationQueryBuilder.Build(
+                    request);
 
-        if (!iterator.HasMoreResults)
-        {
-            return new ProductPageResponse
+
+            // --------------------------------------
+            // Cosmos Request Options
+            // --------------------------------------
+
+            var requestOptions =
+                new QueryRequestOptions
+                {
+                    MaxItemCount =
+                        request.PageSize
+                };
+
+
+            // --------------------------------------
+            // Create Iterator
+            // --------------------------------------
+
+            using FeedIterator<ProductDocument>
+                iterator =
+                    _container
+                        .GetItemQueryIterator<ProductDocument>(
+                            query,
+                            request.ContinuationToken,
+                            requestOptions);
+
+
+            // --------------------------------------
+            // No More Results
+            // --------------------------------------
+
+            if (!iterator.HasMoreResults)
             {
-                Items = Array.Empty<ProductDocument>(),
-                Count = 0,
-                PageSize = request.PageSize,
-                ContinuationToken = null,
-                HasMoreResults = false,
-                RequestCharge = 0,
-                ActivityId = string.Empty
-            };
-        }
+                serviceStopwatch.Stop();
 
-        FeedResponse<ProductDocument> response =
-            await iterator.ReadNextAsync(cancellationToken);
 
-        var items = response.ToList();
+                var emptyResult =
+                    new ProductPageResponse
+                    {
+                        Items =
+                            Array.Empty<ProductDocument>(),
 
-        _logger.LogInformation(
-            """
-            Product page retrieved.
-            Count: {Count}.
-            PageSize: {PageSize}.
-            HasContinuationToken: {HasContinuationToken}.
-            ActivityId: {ActivityId}.
-            """,
-            items.Count,
-            request.PageSize,
-            !string.IsNullOrWhiteSpace(response.ContinuationToken),
-            response.ActivityId);
+                        Count = 0,
 
-        return new ProductPageResponse
-        {
-            Items = items,
+                        PageSize =
+                            request.PageSize,
 
-            Count = items.Count,
+                        ContinuationToken =
+                            null,
 
-            PageSize = request.PageSize,
+                        HasMoreResults =
+                            false,
 
-            ContinuationToken = response.ContinuationToken,
+                        RequestCharge = 0,
 
-            HasMoreResults =
+                        ActivityId =
+                            string.Empty
+                    };
+
+
+                _telemetry.RecordSuccess(
+                    serviceActivity,
+                    itemCount: 0,
+                    requestCharge: 0,
+                    durationMilliseconds:
+                        serviceStopwatch
+                            .Elapsed
+                            .TotalMilliseconds);
+
+
+                return emptyResult;
+            }
+
+
+            // --------------------------------------
+            // Cosmos Read
+            // --------------------------------------
+
+            // --------------------------------------
+            // Cosmos Read Telemetry
+            // --------------------------------------
+
+            using var cosmosActivity =
+                _telemetry.StartCosmosReadActivity();
+
+            var cosmosStopwatch =
+                Stopwatch.StartNew();
+
+            FeedResponse<ProductDocument> response;
+
+            try
+            {
+                response =
+                    await iterator.ReadNextAsync(
+                        cancellationToken);
+
+                cosmosStopwatch.Stop();
+
+                cosmosActivity?.SetTag(
+                    "db.system",
+                    "azure.cosmosdb");
+
+                cosmosActivity?.SetTag(
+                    "db.operation",
+                    "query");
+
+                cosmosActivity?.SetTag(
+                    "cosmos.request_charge",
+                    response.RequestCharge);
+
+                cosmosActivity?.SetTag(
+                    "cosmos.activity_id",
+                    response.ActivityId);
+
+                cosmosActivity?.SetTag(
+                    "cosmos.has_more_results",
+                    !string.IsNullOrWhiteSpace(
+                        response.ContinuationToken));
+
+                cosmosActivity?.SetTag(
+                    "cosmos.duration_ms",
+                    cosmosStopwatch.Elapsed.TotalMilliseconds);
+
+                cosmosActivity?.SetStatus(
+                    ActivityStatusCode.Ok);
+            }
+            catch (Exception exception)
+            {
+                cosmosStopwatch.Stop();
+
+                cosmosActivity?.RecordException(
+                    exception);
+
+                cosmosActivity?.SetStatus(
+                    ActivityStatusCode.Error,
+                    exception.Message);
+
+                cosmosActivity?.SetTag(
+                    "cosmos.duration_ms",
+                    cosmosStopwatch.Elapsed.TotalMilliseconds);
+
+                throw;
+            }
+
+
+            // --------------------------------------
+            // Cosmos Activity Tags
+            // --------------------------------------
+
+            cosmosActivity?.SetTag(
+                "db.system",
+                "azure.cosmosdb");
+
+
+            cosmosActivity?.SetTag(
+                "db.operation",
+                "query");
+
+
+            cosmosActivity?.SetTag(
+                "cosmos.request_charge",
+                response.RequestCharge);
+
+
+            cosmosActivity?.SetTag(
+                "cosmos.activity_id",
+                response.ActivityId);
+
+
+            cosmosActivity?.SetTag(
+                "cosmos.has_more_results",
+                !string.IsNullOrWhiteSpace(
+                    response.ContinuationToken));
+
+
+            cosmosActivity?.SetTag(
+                "cosmos.duration_ms",
+                cosmosStopwatch
+                    .Elapsed
+                    .TotalMilliseconds);
+
+
+            cosmosActivity?.SetStatus(
+                ActivityStatusCode.Ok);
+
+
+            // --------------------------------------
+            // Convert Response
+            // --------------------------------------
+
+            var items =
+                response.ToList();
+
+
+            // --------------------------------------
+            // Application Logging
+            // --------------------------------------
+
+            _logger.LogInformation(
+                """
+                Product page retrieved.
+                Count: {Count}.
+                PageSize: {PageSize}.
+                HasContinuationToken: {HasContinuationToken}.
+                ActivityId: {ActivityId}.
+                RequestCharge: {RequestCharge}.
+                """,
+                items.Count,
+                request.PageSize,
                 !string.IsNullOrWhiteSpace(
                     response.ContinuationToken),
+                response.ActivityId,
+                response.RequestCharge);
 
-            RequestCharge = response.RequestCharge,
 
-            ActivityId = response.ActivityId
-        };
-    }
+            // --------------------------------------
+            // Response
+            // --------------------------------------
 
-    private static QueryDefinition BuildQuery(
-        ProductPageRequest request)
-    {
-        var conditions = new List<string>();
+            var result =
+                new ProductPageResponse
+                {
+                    Items =
+                        items,
 
-        var query = new QueryDefinition(
-            """
-            SELECT *
-            FROM c
-            """);
+                    Count =
+                        items.Count,
 
-        if (!string.IsNullOrWhiteSpace(request.Category))
-        {
-            conditions.Add(
-                "c.category = @category");
+                    PageSize =
+                        request.PageSize,
 
-            query.WithParameter(
-                "@category",
-                request.Category);
+                    ContinuationToken =
+                        response.ContinuationToken,
+
+                    HasMoreResults =
+                        !string.IsNullOrWhiteSpace(
+                            response.ContinuationToken),
+
+                    RequestCharge =
+                        response.RequestCharge,
+
+                    ActivityId =
+                        response.ActivityId
+                };
+
+
+            // --------------------------------------
+            // Service Telemetry
+            // --------------------------------------
+
+            serviceStopwatch.Stop();
+
+
+            _telemetry.RecordSuccess(
+                serviceActivity,
+                itemCount:
+                    result.Count,
+
+                requestCharge:
+                    result.RequestCharge,
+
+                durationMilliseconds:
+                    serviceStopwatch
+                        .Elapsed
+                        .TotalMilliseconds);
+
+
+            return result;
         }
-
-        if (request.IsActive.HasValue)
+        catch (Exception exception)
         {
-            conditions.Add(
-                "c.isActive = @isActive");
+            serviceStopwatch.Stop();
 
-            query.WithParameter(
-                "@isActive",
-                request.IsActive.Value);
+
+            _telemetry.RecordFailure(
+                serviceActivity,
+                exception,
+                serviceStopwatch
+                    .Elapsed
+                    .TotalMilliseconds);
+
+
+            throw;
         }
-
-        if (request.MinimumPrice.HasValue)
-        {
-            conditions.Add(
-                "c.price >= @minimumPrice");
-
-            query.WithParameter(
-                "@minimumPrice",
-                request.MinimumPrice.Value);
-        }
-
-        if (request.MaximumPrice.HasValue)
-        {
-            conditions.Add(
-                "c.price <= @maximumPrice");
-
-            query.WithParameter(
-                "@maximumPrice",
-                request.MaximumPrice.Value);
-        }
-
-        var sql =
-            """
-            SELECT *
-            FROM c
-            """;
-
-        if (conditions.Count > 0)
-        {
-            sql += Environment.NewLine;
-
-            sql += "WHERE ";
-
-            sql += string.Join(
-                Environment.NewLine + "AND ",
-                conditions);
-        }
-
-        /*
-         * IMPORTANT:
-         *
-         * A deterministic ORDER BY is strongly recommended
-         * when demonstrating pagination.
-         *
-         * Without a stable ordering, the logical sequence
-         * of results can be difficult to reason about.
-         */
-
-        sql += Environment.NewLine;
-
-        sql += "ORDER BY c.id";
-
-        var finalQuery =
-            new QueryDefinition(sql);
-
-        if (!string.IsNullOrWhiteSpace(request.Category))
-        {
-            finalQuery.WithParameter(
-                "@category",
-                request.Category);
-        }
-
-        if (request.IsActive.HasValue)
-        {
-            finalQuery.WithParameter(
-                "@isActive",
-                request.IsActive.Value);
-        }
-
-        if (request.MinimumPrice.HasValue)
-        {
-            finalQuery.WithParameter(
-                "@minimumPrice",
-                request.MinimumPrice.Value);
-        }
-
-        if (request.MaximumPrice.HasValue)
-        {
-            finalQuery.WithParameter(
-                "@maximumPrice",
-                request.MaximumPrice.Value);
-        }
-
-        return finalQuery;
     }
 }
