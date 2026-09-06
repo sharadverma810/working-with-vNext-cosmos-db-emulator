@@ -231,6 +231,12 @@ GET {{host}}/products/pages?pageSize=1
 Accept: application/json
 x-continuation-token: [{"compositeToken":{"token":null,"range":{"min":"","max":"FF"}},"resumeValues":["product-00006"],"rid":"AgAAAIIAAADuAwAAvQQAAAAAAAA=","skipCount":1}]
 
+
+GET {{host}}/products/pages?pageSize=5&category=Electronics
+Accept: application/json
+
+
+
 ##**********************************Error Handling Scenarios**********************************
 ### ============================================================
 ### ERROR HANDLING - SUCCESS

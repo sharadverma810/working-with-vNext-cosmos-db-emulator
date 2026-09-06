@@ -18,6 +18,10 @@ processors:
 
 exporters:
 
+  # ------------------------------------------
+  # Traces → Jaeger
+  # ------------------------------------------
+
   otlp/jaeger:
 
     endpoint: jaeger:4317
@@ -26,20 +30,60 @@ exporters:
       insecure: true
 
 
+  # ------------------------------------------
+  # Debug Exporter
+  #
+  # TEMPORARY:
+  # Write received telemetry to Collector logs.
+  # ------------------------------------------
+
+  debug:
+    verbosity: detailed
+
+
+  # ------------------------------------------
+  # Metrics → Prometheus
+  # ------------------------------------------
+
+  prometheus:
+
+    endpoint: 0.0.0.0:8889
+
+
 service:
 
   pipelines:
 
+
+    # ----------------------------------------
+    # Trace Pipeline
+    # ----------------------------------------
+
     traces:
 
       receivers:
-
         - otlp
 
       processors:
-
         - batch
 
       exporters:
-
         - otlp/jaeger
+        - debug
+
+
+    # ----------------------------------------
+    # Metrics Pipeline
+    # ----------------------------------------
+
+    metrics:
+
+      receivers:
+        - otlp
+
+      processors:
+        - batch
+
+      exporters:
+        - prometheus
+        - debug
