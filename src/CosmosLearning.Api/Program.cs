@@ -1,4 +1,5 @@
 using CosmosLearning.Api.Configuration;
+using CosmosLearning.Api.Features.Products.Pagination;
 using Microsoft.Azure.Cosmos;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -39,6 +40,8 @@ builder.Services.AddSingleton(sp =>
             ConnectionMode = ConnectionMode.Gateway
         });
 });
+
+builder.Services.AddSingleton<ProductPaginationService>();
 
 var app = builder.Build();
 

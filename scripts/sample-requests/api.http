@@ -1,4 +1,4 @@
-@host = http://localhost:5099
+@host = https://localhost:7121
 @productId = product-demo-001
 @category = Electronics
 
@@ -195,3 +195,38 @@ Content-Type: application/json
   "sortDirection": "ASC",
   "pageSize": 10
 }
+
+
+### Pagination: using continuation token for next page
+### ============================================================
+### Product Pagination - First Page
+### ============================================================
+
+GET {{host}}/products/pages?pageSize=10
+Accept: application/json
+
+
+### ============================================================
+### CONTINUATION TOKEN DEMO
+### PAGE 1
+### ============================================================
+
+GET {{host}}/products/pages?pageSize=1
+Accept: application/json
+
+### ============================================================
+### CONTINUATION TOKEN DEMO - PAGE 2
+### ============================================================
+
+GET {{host}}/products/pages?pageSize=5
+Accept: application/json
+x-continuation-token: [{"compositeToken":{"token":null,"range":{"min":"","max":"FF"}},"resumeValues":["product-00001"],"rid":"AgAAAIIAAADpAwAAfwQAAAAAAAA=","skipCount":1}]
+
+
+### ============================================================
+### CONTINUATION TOKEN DEMO - PAGE 3
+### ============================================================
+
+GET {{host}}/products/pages?pageSize=1
+Accept: application/json
+x-continuation-token: [{"compositeToken":{"token":null,"range":{"min":"","max":"FF"}},"resumeValues":["product-00006"],"rid":"AgAAAIIAAADuAwAAvQQAAAAAAAA=","skipCount":1}]
