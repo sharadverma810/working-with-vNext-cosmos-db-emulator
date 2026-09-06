@@ -1,238 +1,91 @@
-# Cosmos DB Emulator vNext Learning Project
+# Working with vNext Cosmos DB Emulator (Learning Project)
 
-This repository is being built as a local .NET 10 learning project for the
-Azure Cosmos DB Emulator vNext. It will demonstrate the Cosmos DB API for
-NoSQL, the Microsoft.Azure.Cosmos SDK, Product Catalog documents, CRUD,
-point reads, parameterized queries, the actual HTTP `QUERY` method, and
-continuation-token pagination.
+This repository is a local .NET 10 learning project that demonstrates using the
+Azure Cosmos DB Emulator vNext with a small ASP.NET Core Web API, a
+bootstrap/seeding tool, and OpenTelemetry for observability.
 
-The implementation is being developed incrementally. At the current
-baseline, this repository contains the planning and emulator setup
-documentation only. The .NET solution, API, bootstrap command, reset command,
-and test project will be added by following the canonical plan:
+Top-level layout
+- src/CosmosLearning.Api       - ASP.NET Core Web API (products, pagination, telemetry)
+- src/CosmosLearning.Bootstrap - Console app to seed/reset the Cosmos DB container
+- tests/CosmosLearning.Tests   - Unit tests
+- docker-compose.yml          - Optional observability stack (Jaeger, OTEL Collector, Prometheus)
+- docs/                       - Detailed guides, including the emulator setup
 
-[docs/cosmos-vnext-learning-plan.md](docs/cosmos-vnext-learning-plan.md)
-
-Do not use commands for the application itself until the corresponding task
-has been implemented and verified.
-
-## Project Scope
-
-The target local architecture is:
-
-```text
-Client
-	|
-	v
-ASP.NET Core Web API
-	|
-	v
-Microsoft.Azure.Cosmos SDK
-	|
-	v
-Azure Cosmos DB Emulator vNext
-	|
-	v
-Docker Desktop
-```
-
-The project is local-only. It does not require an Azure subscription and does
-not currently cover Azure networking, private endpoints, MongoDB API
-workloads, or production deployment.
-
-## Prerequisites
-
-- Windows
-- Docker Desktop with the WSL 2 backend
+Prerequisites
 - .NET 10 SDK
-- Git
-- PowerShell 5.1 or PowerShell 7+
+- Docker Desktop (with WSL2 on Windows) — required to run the vNext emulator and the optional observability stack
+- PowerShell (Windows) or a POSIX shell
 
-Check the local tools:
+Quick start (minimal)
 
-```powershell
-docker --version
-docker info
-wsl --status
-dotnet --version
-```
+1. Restore and build
 
-## Start the Emulator
+   - dotnet restore "CosmosLearning.slnx"
+   - dotnet build "CosmosLearning.slnx"
 
-Stop any older Windows Cosmos DB Emulator that is using port `8081`. Then
-pull the official vNext image:
+2. Start the optional observability stack (recommended)
 
-```powershell
-docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest
-docker volume create cosmos-vnext-data
-```
+   From the repository root:
+   - docker compose up -d
 
-Start the emulator in HTTPS mode:
+   UIs:
+   - Jaeger:    http://localhost:16686
+   - Prometheus: http://localhost:9090
 
-```powershell
-docker run -d `
-	--name cosmos-vnext `
-	-p 8081:8081 `
-	-p 8080:8080 `
-	-p 1234:1234 `
-	-v cosmos-vnext-data:/data `
-	mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest `
-	--protocol https
-```
+3. Run the Cosmos DB vNext emulator
 
-Check status and logs:
+   - Follow the detailed guide in docs/Azure_Cosmos_DB_Emulator_vNext_Windows_Docker_Guide_Updated_PowerShell51.md to run the emulator and import the local certificate into the current user's trusted root store.
 
-```powershell
-docker ps
-docker logs cosmos-vnext --tail 50
-curl.exe http://localhost:8080/ready
-```
+   - Default bootstrap/appsettings expect the gateway at: https://localhost:8081/ (see src/CosmosLearning.Bootstrap/appsettings.json).
 
-The readiness endpoint is HTTP on port `8080`. The Cosmos gateway is HTTPS
-on port `8081`, and Data Explorer is normally available at
-`https://localhost:1234`.
+4. Seed the database (Bootstrap)
 
-Healthy logs should include messages similar to:
+   - Provide the emulator account key via environment variable (do not commit it):
+	 PowerShell example:
+	   $env:COSMOS__ACCOUNTKEY = '<emulator-account-key>'
 
-```text
-PostgreSQL=OK, Gateway=OK, Explorer=OK
-System is now fully ready to accept requests
-Now listening on: https://0.0.0.0:8081
-```
+   - Run the bootstrap tool (reset will recreate data):
+	   dotnet run --project src/CosmosLearning.Bootstrap -- --reset
 
-For more emulator-specific troubleshooting, see
-[Azure_Cosmos_DB_Emulator_vNext_Windows_Docker_Guide_Updated_PowerShell51.md](Azure_Cosmos_DB_Emulator_vNext_Windows_Docker_Guide_Updated_PowerShell51.md).
+5. Run the Web API
 
-## Certificate Setup
+   - From Visual Studio: open CosmosLearning.slnx and run the CosmosLearning.Api project.
+   - From the command line:
+	   dotnet run --project src/CosmosLearning.Api
 
-The emulator uses a local HTTPS certificate. Download it with the method for
-the PowerShell version in use, then import it into the current user's trusted
-root store.
+   - The API is instrumented with OpenTelemetry and configured to export to the local OTEL collector at http://localhost:4318 by default.
 
-### Windows PowerShell 5.1
+6. Run tests
 
-PowerShell 5.1 does not support `SkipCertificateCheck` on
-`Invoke-WebRequest`. Use `curl.exe`:
+   - dotnet test tests/CosmosLearning.Tests
 
-```powershell
-curl.exe -k https://localhost:8081/_explorer/emulator.pem -o emulatorcert.crt
-Import-Certificate `
-	-FilePath .\emulatorcert.crt `
-	-CertStoreLocation Cert:\CurrentUser\Root
-```
+Configuration
+- The apps use a configuration section named "Cosmos" with these required keys:
+  - Cosmos:Endpoint
+  - Cosmos:AccountKey
+  - Cosmos:DatabaseName
+  - Cosmos:ContainerName
 
-### PowerShell 7+
+You can set these in appsettings.json or via environment variables using the double-underscore convention (example: COSMOS__ACCOUNTKEY).
 
-```powershell
-$parameters = @{
-		Uri = 'https://localhost:8081/_explorer/emulator.pem'
-		Method = 'GET'
-		OutFile = 'emulatorcert.crt'
-		SkipCertificateCheck = $True
-}
+Observability
+- OTEL Collector endpoint (configured in src/CosmosLearning.Api/Program.cs): http://localhost:4318
+- Jaeger UI: http://localhost:16686
+- Prometheus: http://localhost:9090
 
-Invoke-WebRequest @parameters
-Import-Certificate `
-	-FilePath .\emulatorcert.crt `
-	-CertStoreLocation Cert:\CurrentUser\Root
-```
+API highlights
+- The project exposes a health endpoint that verifies Cosmos connectivity: /health/cosmos
+- There is a QUERY-based endpoint for advanced searches: QUERY /products/query (examples in scripts/sample-requests/api.http)
 
-The `-k` or `SkipCertificateCheck` option is used only while downloading the
-local certificate. Do not disable certificate validation in the application.
+Troubleshooting & notes
+- Certificate errors: import the emulator certificate into Cert:\CurrentUser\Root (see docs for PowerShell 5.1 vs 7+ instructions).
+- If port 8081 is occupied, stop the older Windows emulator or the conflicting process.
+- The bootstrap app will fail if Cosmos:AccountKey is missing — supply it via environment variable for local runs.
 
-## Current Repository Status
+References
+- docs/Azure_Cosmos_DB_Emulator_vNext_Windows_Docker_Guide_Updated_PowerShell51.md — step-by-step emulator guide
+- docs/http-query-research.md — notes about the HTTP QUERY method and routing
 
-Task 1 is complete and the Task 2 solution/connectivity slice is implemented.
-The repository now contains the .NET solution, API project, bootstrap project,
-test project, typed Cosmos configuration, and one DI-managed `CosmosClient`.
-It also contains the initial Product Catalog document model and its focused
-serialization tests, deterministic sample-data generation, and the bootstrap
-command, reset command, and CRUD API.
-
-Configure the emulator account key through the environment rather than
-committing it to source control:
-
-```powershell
-$env:Cosmos__AccountKey = '<emulator-account-key>'
-dotnet run --project src/CosmosLearning.Api/CosmosLearning.Api.csproj --urls http://localhost:5099
-```
-
-The current connectivity endpoint is:
-
-```text
-GET http://localhost:5099/health/cosmos
-```
-
-The application performs a Cosmos account read and returns `200` only after a
-successful SDK connection. Transport failures return `503` without exposing
-secrets or stack traces.
-
-Implemented and verified:
-
-- `dotnet restore`
-- `dotnet build CosmosLearning.slnx`
-- `dotnet test`
-- Emulator readiness and gateway availability
-- Configuration validation and safe connectivity failure handling
-
-Not yet implemented:
-
-- advanced query scenarios
-
-The next implementation step is Task 9 in
-[docs/cosmos-vnext-learning-plan.md](docs/cosmos-vnext-learning-plan.md).
-
-## HTTP QUERY Research
-
-Task 7 research is complete in
-[docs/http-query-research.md](docs/http-query-research.md). The disposable
-.NET 10 probe confirmed that both Minimal API `MapMethods` and controller
-`[AcceptVerbs("QUERY")]` can route the literal method. The recommended project
-implementation remains controller-based and requires approval before Task 8.
-
-The current ASP.NET Core 10 OpenAPI generator produces OpenAPI 3.1 and
-excludes unknown methods such as `QUERY`. The literal method should therefore
-be tested with `curl.exe` and `api.http`, not represented as `POST /query`.
-
-## HTTP QUERY Endpoint
-
-The actual endpoint is:
-
-```text
-QUERY /products/query
-```
-
-It accepts a structured JSON body with filters for category, subcategory,
-status, price, rating, boolean flags, dates, warehouse city, and tags. It also
-supports `sortField`, `sortDirection`, `pageSize`, and `continuationToken`.
-
-Values are passed to Cosmos through `QueryDefinition` parameters. Sort fields
-are restricted to `price`, `rating`, `createdAt`, and `productName`; direction
-is restricted to `ASC` or `DESC`; page size is limited to 100. Raw Cosmos SQL
-is not accepted.
-
-Example:
-
-```powershell
-curl.exe -X QUERY http://localhost:5099/products/query `
-	-H "Content-Type: application/json" `
-	--data-binary "{...}"
-```
-
-See [scripts/sample-requests/api.http](scripts/sample-requests/api.http) for a
-complete request body. The endpoint returns `items`, `count`,
-`continuationToken`, `requestCharge`, and `activityId` where available.
-
-### Advanced Query Scenarios
-
-The QUERY builder and sample requests also demonstrate:
-
-- Date ranges with `createdAfter` and `createdBefore`.
-- Explicit JSON null values with `IS_NULL`.
-- Missing properties with `IS_DEFINED`.
-- Nested objects such as `manufacturer.country`, `metadata.source`, and
-	`warehouseLocation.city`.
-- Array membership with `ARRAY_CONTAINS`.
 - Nested review arrays with `EXISTS`.
 - A combined category, status, price, rating, active, and tag filter.
 
