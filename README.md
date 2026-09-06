@@ -307,6 +307,20 @@ curl.exe http://localhost:8080/ready
 Wait for the readiness response and healthy gateway/explorer log messages
 before beginning application work.
 
+``` powershell
+Check QUERY endpoint with a sample request:
+
+curl.exe -k -X QUERY `
+  "https://localhost:7121/products/query" `
+  -H "Content-Type: application/json" `
+  -H "Accept: application/json" `
+  --data-binary "@query.json"
+
+  ```
+
+
+
+
 ## Verification Status
 
 | Check | Status |

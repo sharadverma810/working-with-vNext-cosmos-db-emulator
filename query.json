@@ -1,0 +1,6 @@
+{
+  "category": "Electronics",
+  "minimumPrice": 100,
+  "maximumPrice": 500,
+  "pageSize": 10
+}
