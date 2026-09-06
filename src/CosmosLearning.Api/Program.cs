@@ -1,16 +1,23 @@
 using CosmosLearning.Api.Configuration;
 using CosmosLearning.Api.Features.ErrorHandling.Services;
 using CosmosLearning.Api.Features.Products.Pagination;
+using CosmosLearning.Api.Infrastructure.Cosmos;
 using CosmosLearning.Api.Infrastructure.ErrorHandling;
+using CosmosLearning.Api.Infrastructure.Resilience;
 using Microsoft.Azure.Cosmos;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ------------------------------------------------------------
+// Controllers
+// ------------------------------------------------------------
 
 builder.Services.AddControllers();
 
+// ------------------------------------------------------------
 // Swagger / OpenAPI
+// ------------------------------------------------------------
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -26,20 +33,33 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-// Configure Cosmos DB options and validate them
+// ------------------------------------------------------------
+// Cosmos DB Configuration
+// ------------------------------------------------------------
 
 builder.Services
     .AddOptions<CosmosOptions>()
     .Bind(builder.Configuration.GetSection(CosmosOptions.SectionName))
-    .Validate(options => Uri.TryCreate(options.Endpoint, UriKind.Absolute, out _),
+    .Validate(
+        options => Uri.TryCreate(
+            options.Endpoint,
+            UriKind.Absolute,
+            out _),
         "Cosmos:Endpoint must be an absolute URI.")
-    .Validate(options => !string.IsNullOrWhiteSpace(options.AccountKey),
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.AccountKey),
         "Cosmos:AccountKey must be configured.")
-    .Validate(options => !string.IsNullOrWhiteSpace(options.DatabaseName),
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.DatabaseName),
         "Cosmos:DatabaseName must be configured.")
-    .Validate(options => !string.IsNullOrWhiteSpace(options.ContainerName),
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.ContainerName),
         "Cosmos:ContainerName must be configured.")
     .ValidateOnStart();
+
+// ------------------------------------------------------------
+// Cosmos DB Client
+// ------------------------------------------------------------
 
 builder.Services.AddSingleton(sp =>
 {
@@ -54,37 +74,82 @@ builder.Services.AddSingleton(sp =>
         new CosmosClientOptions
         {
             ConnectionMode = ConnectionMode.Gateway,
+
+            // Cosmos SDK built-in retry for 429 responses
             MaxRetryAttemptsOnRateLimitedRequests = 9,
+
             MaxRetryWaitTimeOnRateLimitedRequests =
-            TimeSpan.FromSeconds(30)
+                TimeSpan.FromSeconds(30)
         });
 });
 
+// ------------------------------------------------------------
+// Health Checks
+// ------------------------------------------------------------
 
-// Register services for error handling demo and product pagination
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<CosmosHealthCheck>("cosmosdb");
+
+// ------------------------------------------------------------
+// Feature Services
+// ------------------------------------------------------------
+
+// Error Handling demonstration
 builder.Services.AddScoped<ErrorHandlingDemoService>();
+
+// Product Pagination feature
 builder.Services.AddSingleton<ProductPaginationService>();
 
 var app = builder.Build();
 
+// ============================================================
+// HTTP REQUEST PIPELINE
+// ============================================================
 
 // ------------------------------------------------------------
-// Exception Handling
+// Global Exception Handling
+//
+// Keep this early so it can handle exceptions from downstream
+// middleware, controllers and services.
 // ------------------------------------------------------------
 
 app.UseExceptionHandler();
 
-// Configure Swagger for Development
+// ------------------------------------------------------------
+// Correlation ID
+// ------------------------------------------------------------
+
+app.UseMiddleware<CorrelationIdMiddleware>();
+
+// ------------------------------------------------------------
+// Swagger
+// ------------------------------------------------------------
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// ------------------------------------------------------------
+// HTTPS
+// ------------------------------------------------------------
+
 app.UseHttpsRedirection();
+
+// ------------------------------------------------------------
+// Authorization
+// ------------------------------------------------------------
 
 app.UseAuthorization();
 
+// ------------------------------------------------------------
+// Endpoints
+// ------------------------------------------------------------
+
 app.MapControllers();
+
+app.MapHealthChecks("/health");
 
 app.Run();

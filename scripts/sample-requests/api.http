@@ -293,3 +293,33 @@ Accept: application/json
 
 GET {{host}}/error-handling/cancellation
 Accept: application/json
+
+
+
+##******** Global error handling scenarios ********
+
+### Global Exception Demo - Success
+
+GET {{host}}/global-exception-demo/success
+
+Accept: application/json
+
+
+### Global Exception Demo - Unhandled Exception
+
+GET {{host}}/global-exception-demo/unhandled
+
+Accept: application/json
+
+### Global Exception Demo - Nested Exception
+
+GET {{host}}/global-exception-demo/nested
+
+Accept: application/json
+
+
+### Global Exception Demo - Async Exception
+
+GET {{host}}/global-exception-demo/async
+
+Accept: application/json
