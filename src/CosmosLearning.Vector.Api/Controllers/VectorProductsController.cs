@@ -53,6 +53,20 @@ public sealed class VectorProductsController : ControllerBase
         });
     }
 
+    [HttpPost("seed-large")]
+    public async Task<IActionResult> SeedLargeCatalog([FromQuery] int count = 1000, CancellationToken cancellationToken = default)
+    {
+        int inserted =
+            await _searchService.SeedLargeCatalogAsync(count, cancellationToken);
+
+        return Ok(new
+        {
+            requested = count,
+            inserted,
+            message = "Large product catalog has been embedded with Ollama and stored in Cosmos DB."
+        });
+    }
+
     [HttpPost("search")]
     public async Task<ActionResult<IReadOnlyList<VectorSearchResult>>> Search(
         [FromBody] VectorSearchRequest request,

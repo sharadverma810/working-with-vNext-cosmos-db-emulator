@@ -8,7 +8,7 @@ public sealed class OllamaEmbeddingRequest
     public string Model { get; set; } = string.Empty;
 
     [JsonPropertyName("input")]
-    public string Input { get; set; } = string.Empty;
+    public IReadOnlyList<string> Input { get; set; } = [];
 }
 
 public sealed class OllamaEmbeddingResponse

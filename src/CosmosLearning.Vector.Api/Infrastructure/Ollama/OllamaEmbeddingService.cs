@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Json;
-using CosmosLearning.Vector.Api.Options;
+﻿using CosmosLearning.Vector.Api.Options;
 using Microsoft.Extensions.Options;
 
 namespace CosmosLearning.Vector.Api.Infrastructure.Ollama;
@@ -24,48 +23,65 @@ public sealed class OllamaEmbeddingService : IOllamaEmbeddingService
         string text,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            throw new ArgumentException(
-                "Text cannot be empty.",
-                nameof(text));
-        }
+        var embeddings =
+            await GenerateEmbeddingsAsync(
+                [text],
+                cancellationToken);
+
+        return embeddings[0];
+    }
+
+    public async Task<IReadOnlyList<float[]>> GenerateEmbeddingsAsync(
+        IReadOnlyList<string> texts,
+        CancellationToken cancellationToken = default)
+    {
+        if (texts.Count == 0)
+            return [];
 
         var request = new OllamaEmbeddingRequest
         {
             Model = _options.EmbeddingModel,
-            Input = text
+            Input = texts
         };
 
-        _logger.LogInformation("Generating embedding using Ollama model {Model}", _options.EmbeddingModel);
+        _logger.LogInformation(
+            "Generating {Count} embeddings using Ollama model {Model}",
+            texts.Count,
+            _options.EmbeddingModel);
 
         using HttpResponseMessage response =
-            await _httpClient.PostAsJsonAsync("api/embed", request, cancellationToken);
+            await _httpClient.PostAsJsonAsync(
+                "api/embed",
+                request,
+                cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
         var result =
-            await response.Content.ReadFromJsonAsync<OllamaEmbeddingResponse>(
-                cancellationToken);
+            await response.Content
+                .ReadFromJsonAsync<OllamaEmbeddingResponse>(
+                    cancellationToken);
 
         if (result?.Embeddings is null ||
-            result.Embeddings.Count == 0)
+            result.Embeddings.Count != texts.Count)
         {
             throw new InvalidOperationException(
-                "Ollama returned no embedding.");
+                $"Ollama returned {result?.Embeddings?.Count ?? 0} " +
+                $"embeddings for {texts.Count} inputs.");
         }
 
-        float[] embedding = result.Embeddings[0];
-
-        if (embedding.Length != _options.Dimensions)
+        foreach (float[] embedding in result.Embeddings)
         {
-            throw new InvalidOperationException(
-                $"Expected {_options.Dimensions} dimensions " +
-                $"but Ollama returned {embedding.Length}.");
+            if (embedding.Length != _options.Dimensions)
+            {
+                throw new InvalidOperationException(
+                    $"Expected {_options.Dimensions} dimensions " +
+                    $"but Ollama returned {embedding.Length}.");
+            }
         }
 
-        _logger.LogInformation("Embedding generated successfully. Dimensions: {Dimensions}", embedding.Length);
+        _logger.LogInformation("Generated {Count} embeddings successfully.", result.Embeddings.Count);
 
-        return embedding;
+        return result.Embeddings;
     }
 }

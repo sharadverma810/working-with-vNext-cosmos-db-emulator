@@ -12,14 +12,11 @@ public sealed class VectorSearchService
         _repository = repository;
     }
 
-    public async Task<IReadOnlyList<VectorSearchResult>> SearchAsync(
-        VectorSearchRequest request,
-        CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<VectorSearchResult>> SearchAsync(VectorSearchRequest request, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Query))
         {
-            throw new ArgumentException(
-                "Query is required.");
+            throw new ArgumentException("Query is required.");
         }
 
         int top = request.Top;
@@ -34,9 +31,24 @@ public sealed class VectorSearchService
             top = 20;
         }
 
-        return await _repository.SearchAsync(
-            request.Query,
-            top,
-            cancellationToken);
+        if (request.MinimumPrice.HasValue &&
+            request.MaximumPrice.HasValue &&
+            request.MinimumPrice > request.MaximumPrice)
+        {
+            throw new ArgumentException("MinimumPrice cannot be greater than MaximumPrice.");
+        }
+
+        return await _repository.SearchAsync(request, top, cancellationToken);
+    }
+
+    public async Task<int> SeedLargeCatalogAsync(int targetCount, CancellationToken cancellationToken = default)
+    {
+        if (targetCount < 1000)
+            throw new ArgumentException("The large catalog target must be at least 1000 products.");
+
+        if (targetCount > 5000)
+            throw new ArgumentException("For this local demo, the maximum catalog size is 5000 products.");
+
+        return await _repository.SeedLargeCatalogAsync(targetCount, cancellationToken);
     }
 }
