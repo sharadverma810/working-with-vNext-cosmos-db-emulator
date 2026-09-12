@@ -1,3 +1,4 @@
+using CosmosLearning.Vector.Api.Features.HybridSearch;
 using CosmosLearning.Vector.Api.Features.VectorSearch;
 using CosmosLearning.Vector.Api.Infrastructure.CosmosDb;
 using CosmosLearning.Vector.Api.Infrastructure.Ollama;
@@ -80,6 +81,9 @@ builder.Services.AddSingleton<CosmosClient>(
 // -------------------------------------------------------
 
 builder.Services.AddSingleton<CosmosVectorDatabaseInitializer>();
+builder.Services.AddSingleton<CosmosHybridDatabaseInitializer>();
+builder.Services.AddSingleton<CosmosHybridRepository>();
+builder.Services.AddSingleton<HybridSearchService>();
 
 builder.Services.AddSingleton<CosmosVectorRepository>();
 
@@ -103,6 +107,12 @@ try
             CosmosVectorDatabaseInitializer>();
 
     await initializer.InitializeAsync();
+
+    var hybridInitializer =
+       scope.ServiceProvider
+           .GetRequiredService<CosmosHybridDatabaseInitializer>();
+
+    await hybridInitializer.InitializeAsync();
 }
 catch (Exception ex)
 {

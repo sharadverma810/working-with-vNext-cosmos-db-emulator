@@ -11,5 +11,6 @@ public sealed class CosmosOptions
     public string DatabaseName { get; set; } = string.Empty;
 
     public string ContainerName { get; set; } = string.Empty;
+    public string HybridContainerName { get; set; } = string.Empty;
 }
 
