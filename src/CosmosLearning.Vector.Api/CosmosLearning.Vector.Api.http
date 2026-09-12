@@ -1,0 +1,6 @@
+@CosmosLearning.Vector.Api_HostAddress = http://localhost:5142
+
+GET {{CosmosLearning.Vector.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

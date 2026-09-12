@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/CosmosLearning.Api/CosmosLearning.Api.csproj" />
     <Project Path="src/CosmosLearning.Bootstrap/CosmosLearning.Bootstrap.csproj" />
+    <Project Path="src/CosmosLearning.Vector.Api/CosmosLearning.Vector.Api.csproj" Id="a0ec5202-e2b1-482c-85d7-3772cc15bb5a" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CosmosLearning.Tests/CosmosLearning.Tests.csproj" />
