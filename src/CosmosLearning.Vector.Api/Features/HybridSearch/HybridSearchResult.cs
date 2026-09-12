@@ -19,6 +19,12 @@ public sealed class HybridSearchResult
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
 
-    [JsonPropertyName("score")]
-    public double Score { get; set; }
+    [JsonPropertyName("vectorRank")]
+    public int? VectorRank { get; set; }
+
+    [JsonPropertyName("keywordRank")]
+    public int? KeywordRank { get; set; }
+
+    [JsonPropertyName("rrfScore")]
+    public double RrfScore { get; set; }
 }

@@ -84,6 +84,7 @@ builder.Services.AddSingleton<CosmosVectorDatabaseInitializer>();
 builder.Services.AddSingleton<CosmosHybridDatabaseInitializer>();
 builder.Services.AddSingleton<CosmosHybridRepository>();
 builder.Services.AddSingleton<HybridSearchService>();
+builder.Services.AddSingleton<KeywordSearchService>();
 
 builder.Services.AddSingleton<CosmosVectorRepository>();
 

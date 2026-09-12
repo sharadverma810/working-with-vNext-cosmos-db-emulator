@@ -1,6 +1,5 @@
 ﻿using CosmosLearning.Vector.Api.Features.HybridSearch;
 using CosmosLearning.Vector.Api.Features.Products.Seed;
-using CosmosLearning.Vector.Api.Features.VectorSearch;
 using CosmosLearning.Vector.Api.Infrastructure.Ollama;
 using CosmosLearning.Vector.Api.Options;
 using Microsoft.Azure.Cosmos;
@@ -129,7 +128,187 @@ public sealed class CosmosHybridRepository
 
         return inserted;
     }
-    public async Task<IReadOnlyList<HybridSearchResult>> SearchAsync(
+    public async Task<IReadOnlyList<HybridSearchCandidate>> VectorSearchAsync(
+    HybridSearchRequest request,
+    int candidateCount,
+    CancellationToken cancellationToken = default)
+    {
+        float[] queryEmbedding =
+            await _embeddingService.GenerateEmbeddingAsync(
+                request.Query,
+                cancellationToken);
+
+        var sql = new StringBuilder();
+
+        sql.AppendLine(
+            """
+        SELECT TOP @top
+            c.id,
+            c.name,
+            c.category,
+            c.price,
+            c.description,
+            c.searchText
+        FROM c
+        WHERE 1 = 1
+        """);
+
+        if (!string.IsNullOrWhiteSpace(request.Category))
+        {
+            sql.AppendLine(
+                "AND c.category = @category");
+        }
+
+        if (request.MinimumPrice.HasValue)
+        {
+            sql.AppendLine(
+                "AND c.price >= @minimumPrice");
+        }
+
+        if (request.MaximumPrice.HasValue)
+        {
+            sql.AppendLine(
+                "AND c.price <= @maximumPrice");
+        }
+
+        sql.AppendLine(
+            """
+        ORDER BY VectorDistance(
+            c.embedding,
+            @embedding
+        )
+        """);
+
+        var queryDefinition =
+            new QueryDefinition(sql.ToString())
+                .WithParameter("@top", candidateCount)
+                .WithParameter("@embedding", queryEmbedding);
+
+        if (!string.IsNullOrWhiteSpace(request.Category))
+        {
+            queryDefinition =
+                queryDefinition.WithParameter(
+                    "@category",
+                    request.Category);
+        }
+
+        if (request.MinimumPrice.HasValue)
+        {
+            queryDefinition =
+                queryDefinition.WithParameter(
+                    "@minimumPrice",
+                    request.MinimumPrice.Value);
+        }
+
+        if (request.MaximumPrice.HasValue)
+        {
+            queryDefinition =
+                queryDefinition.WithParameter(
+                    "@maximumPrice",
+                    request.MaximumPrice.Value);
+        }
+
+        using FeedIterator<HybridSearchCandidate> iterator =
+            _container.GetItemQueryIterator<HybridSearchCandidate>(
+                queryDefinition);
+
+        var results =
+            new List<HybridSearchCandidate>();
+
+        while (iterator.HasMoreResults)
+        {
+            FeedResponse<HybridSearchCandidate> response =
+                await iterator.ReadNextAsync(
+                    cancellationToken);
+
+            results.AddRange(response);
+        }
+
+        return results;
+    }
+    public async Task<IReadOnlyList<HybridSearchCandidate>> GetKeywordCandidatesAsync(
+    HybridSearchRequest request,
+    CancellationToken cancellationToken = default)
+    {
+        var sql = new StringBuilder();
+
+        sql.AppendLine(
+            """
+        SELECT
+            c.id,
+            c.name,
+            c.category,
+            c.price,
+            c.description,
+            c.searchText
+        FROM c
+        WHERE 1 = 1
+        """);
+
+        if (!string.IsNullOrWhiteSpace(request.Category))
+        {
+            sql.AppendLine(
+                "AND c.category = @category");
+        }
+
+        if (request.MinimumPrice.HasValue)
+        {
+            sql.AppendLine(
+                "AND c.price >= @minimumPrice");
+        }
+
+        if (request.MaximumPrice.HasValue)
+        {
+            sql.AppendLine(
+                "AND c.price <= @maximumPrice");
+        }
+
+        var queryDefinition =
+            new QueryDefinition(sql.ToString());
+
+        if (!string.IsNullOrWhiteSpace(request.Category))
+        {
+            queryDefinition =
+                queryDefinition.WithParameter(
+                    "@category",
+                    request.Category);
+        }
+
+        if (request.MinimumPrice.HasValue)
+        {
+            queryDefinition =
+                queryDefinition.WithParameter(
+                    "@minimumPrice",
+                    request.MinimumPrice.Value);
+        }
+
+        if (request.MaximumPrice.HasValue)
+        {
+            queryDefinition =
+                queryDefinition.WithParameter(
+                    "@maximumPrice",
+                    request.MaximumPrice.Value);
+        }
+
+        using FeedIterator<HybridSearchCandidate> iterator =
+            _container.GetItemQueryIterator<HybridSearchCandidate>(
+                queryDefinition);
+
+        var results =
+            new List<HybridSearchCandidate>();
+
+        while (iterator.HasMoreResults)
+        {
+            FeedResponse<HybridSearchCandidate> response =
+                await iterator.ReadNextAsync(
+                    cancellationToken);
+
+            results.AddRange(response);
+        }
+
+        return results;
+    }
+    public async Task<IReadOnlyList<HybridSearchResult>> SearchAsync_Cloud_CosmosDb(
     HybridSearchRequest request,
     int top,
     CancellationToken cancellationToken = default)
