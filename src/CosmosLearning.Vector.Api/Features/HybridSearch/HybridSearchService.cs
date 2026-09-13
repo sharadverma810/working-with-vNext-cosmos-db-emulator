@@ -6,6 +6,7 @@ public sealed class HybridSearchService
 {
     private readonly CosmosHybridRepository _repository;
     private readonly KeywordSearchService _keywordSearchService;
+    public const int VectorCandidateCount = 100;
 
     public HybridSearchService(
         CosmosHybridRepository repository,
@@ -147,18 +148,18 @@ public sealed class HybridSearchService
          * We retrieve a larger vector candidate pool.
          *
          * Top = 5
-         * Vector candidates = 50
+         * Vector candidates = 100
          *
          * This allows documents that are not in the first
          * five vector results to still participate in RRF.
          */
-        const int vectorCandidateCount = 50;
+        // const int vectorCandidateCount = VectorCandidateCount;
 
         var vectorCandidates =
-            await _repository.VectorSearchAsync(
-                request,
-                vectorCandidateCount,
-                cancellationToken);
+     await _repository.VectorSearchAsync(
+         request,
+         VectorCandidateCount,
+         cancellationToken);
 
         var keywordCandidates =
             await _repository.GetKeywordCandidatesAsync(

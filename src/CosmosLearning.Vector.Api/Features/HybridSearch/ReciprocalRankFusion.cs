@@ -2,7 +2,7 @@
 
 public static class ReciprocalRankFusion
 {
-    private const int DefaultRankConstant = 60;
+    public const int DefaultRankConstant = 60;
 
     public static IReadOnlyList<HybridSearchResult> Fuse(
         IReadOnlyList<HybridSearchCandidate> vectorResults,

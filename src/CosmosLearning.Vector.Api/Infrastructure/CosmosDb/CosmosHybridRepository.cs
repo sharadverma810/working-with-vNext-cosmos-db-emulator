@@ -400,4 +400,36 @@ public sealed class CosmosHybridRepository
 
         return results;
     }
+    public async Task<int> DeleteAllAsync(
+    CancellationToken cancellationToken = default)
+    {
+        var query =
+            new QueryDefinition(
+                "SELECT c.id, c.category FROM c");
+
+        using FeedIterator<HybridSearchCandidate> iterator =
+            _container.GetItemQueryIterator<HybridSearchCandidate>(
+                query);
+
+        int deleted = 0;
+
+        while (iterator.HasMoreResults)
+        {
+            FeedResponse<HybridSearchCandidate> response =
+                await iterator.ReadNextAsync(
+                    cancellationToken);
+
+            foreach (var item in response)
+            {
+                await _container.DeleteItemAsync<HybridSearchCandidate>(
+                    item.Id,
+                    new PartitionKey(item.Category),
+                    cancellationToken: cancellationToken);
+
+                deleted++;
+            }
+        }
+
+        return deleted;
+    }
 }

@@ -121,7 +121,7 @@ public sealed class CosmosVectorRepository
 
         int productsToCreate = targetCount - currentCount;
 
-        var products = LargeProductCatalog.Generate(productsToCreate);
+        var products = LargeProductCatalog.Generate(productsToCreate).ToList();
 
         // Make IDs unique even when the existing 12 seed products are present.
         for (int i = 0; i < products.Count; i++)

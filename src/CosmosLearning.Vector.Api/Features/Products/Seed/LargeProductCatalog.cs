@@ -4,508 +4,480 @@ namespace CosmosLearning.Vector.Api.Features.Products.Seed;
 
 public static class LargeProductCatalog
 {
-    private static readonly string[] Adjectives =
-    [
-        "Premium",
-        "Advanced",
-        "Professional",
-        "Smart",
-        "Ultra",
-        "Performance",
-        "Compact",
-        "Portable",
-        "Pro",
-        "Modern"
-    ];
+    private static readonly Random Random = new(42);
 
-    private static readonly string[] Colors =
-    [
-        "Black",
-        "Silver",
-        "White",
-        "Blue",
-        "Graphite"
-    ];
-
-    private static readonly ProductTemplate[] Templates =
-    [
-        new(
-            "Electronics",
-            "Wireless Mechanical Keyboard",
-            4999,
-            14999,
-            "Mechanical keyboard with responsive switches, RGB lighting, wireless connectivity and comfortable typing for gaming and office work.",
-            "gaming keyboard mechanical keyboard RGB keyboard wireless keyboard PC gaming typing"),
-
-        new(
-            "Electronics",
-            "Noise Cancelling Headphones",
-            7999,
-            29999,
-            "Wireless headphones with active noise cancellation, long battery life, clear audio and comfortable ear cushions for travel and work.",
-            "wireless headphones noise cancellation audio music travel office"),
-
-        new(
-            "Electronics",
-            "Bluetooth Speaker",
-            2499,
-            12999,
-            "Portable Bluetooth speaker with powerful audio, deep bass, wireless connectivity and long battery life for indoor and outdoor use.",
-            "Bluetooth speaker wireless speaker portable audio music outdoor"),
-
-        new(
-            "Electronics",
-            "USB-C Docking Station",
-            3999,
-            14999,
-            "USB-C docking station with multiple ports for monitors, keyboards, storage devices and professional workstation connectivity.",
-            "USB-C dock docking station monitor workstation laptop accessories"),
-
-        new(
-            "Electronics",
-            "Wireless Gaming Mouse",
-            1999,
-            8999,
-            "High precision wireless gaming mouse with responsive tracking, programmable buttons and ergonomic design for competitive gaming.",
-            "gaming mouse wireless mouse PC gaming esports RGB"),
-
-        new(
-            "Computers",
-            "Gaming Laptop",
-            65000,
-            160000,
-            "High performance gaming laptop with dedicated graphics, powerful processor, high refresh rate display and fast SSD storage.",
-            "gaming laptop gaming computer graphics GPU processor high refresh gaming"),
-
-        new(
-            "Computers",
-            "Business Laptop",
-            55000,
-            130000,
-            "Professional business laptop with fast processor, long battery life, lightweight design and security features for office work.",
-            "business laptop professional laptop office work productivity portable"),
-
-        new(
-            "Computers",
-            "Developer Laptop",
-            70000,
-            150000,
-            "Powerful laptop designed for software development with fast processor, large memory, high speed SSD and multiple connectivity options.",
-            "programming laptop developer laptop software development coding computer"),
-
-        new(
-            "Computers",
-            "Mini Desktop PC",
-            30000,
-            80000,
-            "Compact desktop computer for office productivity, programming, browsing and everyday business workloads.",
-            "mini PC desktop computer office programming productivity"),
-
-        new(
-            "Computers",
-            "Ultrawide Monitor",
-            25000,
-            90000,
-            "Large ultrawide monitor with high resolution, wide workspace and excellent color reproduction for productivity, coding and creative work.",
-            "ultrawide monitor computer display programming productivity workstation"),
-
-        new(
-            "Gaming",
-            "Gaming Keyboard",
-            3999,
-            14999,
-            "RGB mechanical gaming keyboard with fast switches, anti-ghosting and responsive controls designed for competitive PC gaming.",
-            "gaming keyboard mechanical RGB esports competitive gaming"),
-
-        new(
-            "Gaming",
-            "Gaming Headset",
-            2999,
-            12999,
-            "Gaming headset with surround sound, noise isolation, clear microphone and comfortable padding for long gaming sessions.",
-            "gaming headset gaming headphones microphone PC console esports"),
-
-        new(
-            "Gaming",
-            "Gaming Monitor",
-            18000,
-            75000,
-            "High refresh rate gaming monitor with fast response time, adaptive sync and vivid display for competitive games.",
-            "gaming monitor high refresh rate esports gaming display"),
-
-        new(
-            "Gaming",
-            "Gaming Mouse",
-            1999,
-            9999,
-            "Precision gaming mouse with programmable buttons, low latency wireless connectivity and ergonomic grip for competitive gaming.",
-            "gaming mouse esports FPS gaming competitive PC"),
-
-        new(
-            "Gaming",
-            "Gaming Chair",
-            12000,
-            45000,
-            "Ergonomic gaming chair with lumbar support, adjustable armrests and reclining backrest for long gaming sessions.",
-            "gaming chair ergonomic lumbar support gaming setup"),
-
-        new(
-            "Cameras",
-            "Mirrorless Camera",
-            55000,
-            180000,
-            "High resolution mirrorless camera designed for professional photography, travel photography, portraits and high quality video recording.",
-            "professional camera mirrorless photography portrait travel video"),
-
-        new(
-            "Cameras",
-            "Digital Camera",
-            25000,
-            90000,
-            "Compact digital camera with high resolution sensor, optical zoom and advanced photography controls for travel and everyday photography.",
-            "digital camera photography travel camera optical zoom"),
-
-        new(
-            "Cameras",
-            "Camera Lens",
-            15000,
-            120000,
-            "High quality interchangeable camera lens for portraits, landscapes, professional photography and creative photography.",
-            "camera lens photography portrait landscape professional"),
-
-        new(
-            "Cameras",
-            "Action Camera",
-            15000,
-            55000,
-            "Rugged action camera for travel, adventure sports and outdoor recording with high resolution video and image stabilization.",
-            "action camera adventure sports travel outdoor video"),
-
-        new(
-            "Cameras",
-            "Camera Tripod",
-            2500,
-            15000,
-            "Stable adjustable tripod for professional cameras, photography, video recording and studio or outdoor shooting.",
-            "camera tripod photography video professional studio"),
-
-        new(
-            "Audio",
-            "Studio Headphones",
-            7000,
-            30000,
-            "Professional studio headphones with detailed sound reproduction designed for music production, mixing and critical listening.",
-            "studio headphones professional audio music production mixing"),
-
-        new(
-            "Audio",
-            "Wireless Earbuds",
-            1999,
-            14999,
-            "True wireless earbuds with clear audio, comfortable fit, long battery life and noise isolation for commuting and exercise.",
-            "wireless earbuds Bluetooth audio music running gym"),
-
-        new(
-            "Audio",
-            "Soundbar",
-            8000,
-            45000,
-            "Home entertainment soundbar with clear dialogue, powerful bass and wireless connectivity for movies and television.",
-            "soundbar home theater TV audio movies entertainment"),
-
-        new(
-            "Audio",
-            "USB Microphone",
-            3500,
-            18000,
-            "USB microphone with clear voice capture for streaming, podcasting, online meetings and content creation.",
-            "USB microphone streaming podcast meetings recording"),
-
-        new(
-            "Audio",
-            "Portable Audio Player",
-            8000,
-            40000,
-            "Portable high resolution audio player designed for music enthusiasts who want detailed sound and offline music playback.",
-            "portable music player high resolution audio audiophile"),
-
-        new(
-            "Furniture",
-            "Ergonomic Office Chair",
-            12000,
-            45000,
-            "Ergonomic office chair with adjustable lumbar support, comfortable cushioning and adjustable height for long working hours.",
-            "office chair ergonomic lumbar support work from home workstation"),
-
-        new(
-            "Furniture",
-            "Study Desk",
-            8000,
-            30000,
-            "Spacious study desk with storage and a large work surface suitable for students, home offices and computer workstations.",
-            "study desk office desk workstation student computer home office"),
-
-        new(
-            "Furniture",
-            "Standing Desk",
-            18000,
-            60000,
-            "Height adjustable standing desk designed for flexible working, computer use and healthier office routines.",
-            "standing desk adjustable desk office workstation computer"),
-
-        new(
-            "Furniture",
-            "Bookshelf",
-            5000,
-            25000,
-            "Modern bookshelf with multiple storage shelves for books, office accessories and home organization.",
-            "bookshelf storage furniture home office organization"),
-
-        new(
-            "Furniture",
-            "Computer Table",
-            7000,
-            28000,
-            "Computer table with spacious surface and cable management designed for desktop computers and home office setups.",
-            "computer table desk workstation home office PC setup"),
-
-        new(
-            "Home",
-            "Robot Vacuum Cleaner",
-            18000,
-            60000,
-            "Smart robot vacuum cleaner with automatic navigation, scheduling and efficient floor cleaning for modern homes.",
-            "robot vacuum smart home floor cleaning automatic"),
-
-        new(
-            "Home",
-            "Air Purifier",
-            8000,
-            35000,
-            "Smart air purifier designed for bedrooms and living spaces with quiet operation and automated air quality monitoring.",
-            "air purifier smart home bedroom living room air quality"),
-
-        new(
-            "Home",
-            "Coffee Machine",
-            6000,
-            50000,
-            "Automatic coffee machine for preparing fresh coffee at home with programmable settings and convenient operation.",
-            "coffee machine espresso home kitchen automatic coffee"),
-
-        new(
-            "Home",
-            "Smart LED Light",
-            999,
-            6999,
-            "Smart LED lighting with adjustable brightness, scheduling and wireless control for bedrooms, offices and living spaces.",
-            "smart light LED lighting home office bedroom IoT"),
-
-        new(
-            "Home",
-            "Electric Kettle",
-            1200,
-            6000,
-            "Fast electric kettle with automatic shutoff and temperature control for tea, coffee and everyday kitchen use.",
-            "electric kettle kitchen tea coffee appliance"),
-
-        new(
-            "Fitness",
-            "Treadmill",
-            25000,
-            120000,
-            "Home treadmill with multiple workout programs, speed controls and digital fitness tracking for cardio training.",
-            "treadmill cardio running home gym fitness workout"),
-
-        new(
-            "Fitness",
-            "Exercise Bike",
-            15000,
-            60000,
-            "Indoor exercise bike with adjustable resistance and digital workout tracking for home cardio and fitness training.",
-            "exercise bike cycling cardio home gym fitness"),
-
-        new(
-            "Fitness",
-            "Adjustable Dumbbell",
-            5000,
-            25000,
-            "Adjustable dumbbell set for strength training, home workouts and full body fitness exercises.",
-            "dumbbell strength training home workout fitness weights"),
-
-        new(
-            "Fitness",
-            "Yoga Mat",
-            999,
-            5000,
-            "Comfortable non-slip yoga mat designed for yoga, stretching, mobility and home fitness workouts.",
-            "yoga mat exercise stretching fitness workout"),
-
-        new(
-            "Fitness",
-            "Fitness Tracker",
-            2500,
-            15000,
-            "Fitness tracker for monitoring daily activity, workouts, steps, calories and exercise performance.",
-            "fitness tracker activity steps workout health exercise"),
-
-        new(
-            "Wearables",
-            "Fitness Smart Watch",
-            5000,
-            35000,
-            "Smart watch with fitness tracking, heart rate monitoring, sleep tracking and workout features for active users.",
-            "smart watch fitness heart rate sleep workout wearable"),
-
-        new(
-            "Wearables",
-            "Premium Smart Watch",
-            15000,
-            70000,
-            "Premium smartwatch with advanced notifications, fitness monitoring, health tracking and long battery life.",
-            "premium smartwatch wearable fitness notifications health"),
-
-        new(
-            "Wearables",
-            "Sports Watch",
-            8000,
-            40000,
-            "Rugged sports watch designed for running, cycling, outdoor activities and detailed workout tracking.",
-            "sports watch running cycling outdoor fitness GPS"),
-
-        new(
-            "Wearables",
-            "Smart Ring",
-            10000,
-            40000,
-            "Compact smart ring for activity tracking, sleep monitoring and everyday wellness insights.",
-            "smart ring wearable sleep activity wellness"),
-
-        new(
-            "Wearables",
-            "Fitness Band",
-            1500,
-            8000,
-            "Lightweight fitness band for activity tracking, step counting, sleep monitoring and everyday exercise.",
-            "fitness band activity tracker steps sleep wearable"),
-
-        new(
-            "Mobile",
-            "Camera Smartphone",
-            25000,
-            120000,
-            "Smartphone with advanced camera system, high resolution photography, low light performance and powerful mobile processing.",
-            "smartphone camera phone photography mobile low light"),
-
-        new(
-            "Mobile",
-            "Business Smartphone",
-            20000,
-            90000,
-            "Professional smartphone with strong battery life, secure features, fast performance and productivity tools for business users.",
-            "business smartphone productivity mobile office professional"),
-
-        new(
-            "Mobile",
-            "Gaming Smartphone",
-            25000,
-            100000,
-            "High performance gaming smartphone with fast display, powerful processor, advanced cooling and long battery life.",
-            "gaming smartphone mobile gaming high refresh processor"),
-
-        new(
-            "Mobile",
-            "Budget Smartphone",
-            8000,
-            25000,
-            "Affordable smartphone with reliable performance, long battery life, large display and modern connectivity.",
-            "budget smartphone affordable mobile phone battery"),
-
-        new(
-            "Mobile",
-            "Smartphone Power Bank",
-            1200,
-            6000,
-            "Portable high capacity power bank for charging smartphones, tablets and mobile devices while traveling.",
-            "power bank smartphone charger portable mobile travel")
-    ];
-
-    public static IReadOnlyList<VectorProduct> Generate(int count = 1000)
+    public static IEnumerable<VectorProduct> Generate(int count)
     {
-        var products = new List<VectorProduct>(count);
+        if (count <= 0)
+        {
+            yield break;
+        }
+
+        var products = ProductTemplates.ToList();
 
         for (int i = 0; i < count; i++)
         {
-            ProductTemplate template = Templates[i % Templates.Length];
+            var template = products[i % products.Count];
 
-            int variantNumber = (i / Templates.Length) + 1;
+            int sequence =
+                (i / products.Count) + 1;
 
-            decimal price = CalculatePrice(
-                template.MinPrice,
-                template.MaxPrice,
-                variantNumber);
-
-            string adjective =
-                Adjectives[i % Adjectives.Length];
-
-            string color =
-                Colors[i % Colors.Length];
-
-            string name =
-                $"{adjective} {template.Name} {variantNumber}";
-
-            string description =
-                $"{template.Description} " +
-                $"Available in {color}. " +
-                $"Suitable for modern users looking for reliable " +
-                $"performance, quality and practical everyday use.";
-
-            string searchText =
-                $"""
-                Product: {name}
-                Category: {template.Category}
-                Description: {description}
-                Keywords: {template.Keywords}
-                Color: {color}
-                Use cases: {template.Keywords}
-                """;
-
-            products.Add(
-                new VectorProduct
-                {
-                    Id = $"catalog-{i + 1:0000}",
-                    Name = name,
-                    Category = template.Category,
-                    Price = price,
-                    Description = description,
-                    SearchText = searchText
-                });
+            yield return CreateProduct(
+                template,
+                sequence);
         }
-
-        return products;
     }
 
-    private static decimal CalculatePrice(
-        decimal minimum,
-        decimal maximum,
-        int variant)
+    private static VectorProduct CreateProduct(
+        ProductTemplate template,
+        int sequence)
     {
-        decimal range = maximum - minimum;
+        decimal price =
+            template.BasePrice +
+            Random.Next(-500, 1501);
 
-        // Deterministic price variation.
-        decimal percentage =
-            ((variant * 37) % 100) / 100m;
+        if (price < 999)
+        {
+            price = 999;
+        }
 
-        return Math.Round(
-            minimum + (range * percentage),
-            0);
+        string name =
+            $"{template.Name} {sequence}";
+
+        string searchText =
+            string.Join(
+                ". ",
+                name,
+                template.SearchDescription,
+                template.Features,
+                template.UseCases,
+                template.Keywords);
+
+        return new VectorProduct
+        {
+            Name = name,
+            Category = template.Category,
+            Price = price,
+            Description = template.Description,
+            SearchText = searchText,
+            Embedding = []
+        };
     }
 
     private sealed record ProductTemplate(
         string Category,
         string Name,
-        decimal MinPrice,
-        decimal MaxPrice,
+        decimal BasePrice,
         string Description,
+        string SearchDescription,
+        string Features,
+        string UseCases,
         string Keywords);
+
+    private static readonly ProductTemplate[] ProductTemplates =
+    [
+        // ============================================================
+        // GAMING KEYBOARDS
+        // ============================================================
+
+        new(
+            "Gaming",
+            "Esports Rapid Mechanical Keyboard",
+            8999,
+            "High-performance mechanical keyboard designed for competitive gaming.",
+            "Ultra-fast gaming keyboard built for esports players and competitive PC gaming.",
+            "8000Hz polling rate, 0.5ms response time, rapid actuation, anti-ghosting, N-key rollover, RGB lighting.",
+            "Competitive gaming, esports tournaments, FPS games, reaction-time sensitive games.",
+            "esports fast response competitive gaming rapid actuation anti ghosting mechanical keyboard"),
+
+        new(
+            "Gaming",
+            "Tournament Mechanical Keyboard",
+            10999,
+            "Tournament-ready mechanical keyboard with responsive switches.",
+            "Professional competitive gaming keyboard optimized for fast and precise key input.",
+            "Hot-swappable switches, anti-ghosting, N-key rollover, programmable keys, detachable USB cable.",
+            "Esports competitions, professional gaming, FPS, MOBA and competitive multiplayer games.",
+            "professional tournament esports competitive precise fast mechanical keyboard"),
+
+        new(
+            "Gaming",
+            "Low Latency Gaming Keyboard",
+            7499,
+            "Low-latency keyboard designed for fast gaming input.",
+            "Responsive gaming keyboard for players who need quick reaction and minimal input delay.",
+            "Low latency switches, 1000Hz polling, anti-ghosting, gaming mode, RGB backlight.",
+            "Fast-paced games, FPS gaming, competitive PC gaming.",
+            "low latency quick response fast input gaming keyboard"),
+
+        new(
+            "Gaming",
+            "Quiet Gaming Mechanical Keyboard",
+            8499,
+            "Mechanical gaming keyboard with quieter switches.",
+            "A quieter mechanical keyboard for gaming without sacrificing responsive controls.",
+            "Silent tactile switches, anti-ghosting, RGB lighting, programmable macros.",
+            "Gaming at night, shared rooms, competitive gaming and quiet environments.",
+            "quiet silent mechanical gaming keyboard night gaming"),
+
+        new(
+            "Gaming",
+            "Wireless Gaming Keyboard",
+            11999,
+            "Wireless mechanical keyboard designed for gaming and everyday use.",
+            "Flexible wireless gaming keyboard offering responsive mechanical typing and freedom from cables.",
+            "2.4GHz wireless, Bluetooth, mechanical switches, RGB lighting, rechargeable battery.",
+            "Wireless gaming, desk setups, casual and competitive gaming.",
+            "wireless bluetooth gaming mechanical keyboard rechargeable"),
+
+        // ============================================================
+        // PRODUCTIVITY / OFFICE KEYBOARDS
+        // ============================================================
+
+        new(
+            "Electronics",
+            "Silent Office Keyboard",
+            3499,
+            "Quiet keyboard designed for office environments.",
+            "Comfortable silent keyboard for focused office work and shared workspaces.",
+            "Silent switches, low-profile keys, ergonomic layout, spill resistance.",
+            "Office work, meetings, libraries, shared workspaces.",
+            "silent quiet office keyboard productivity typing"),
+
+        new(
+            "Electronics",
+            "Low Profile Productivity Keyboard",
+            4299,
+            "Slim keyboard designed for comfortable everyday productivity.",
+            "Low-profile keyboard for developers, writers and professionals who type for long periods.",
+            "Low-profile keys, comfortable key spacing, wired USB connection.",
+            "Programming, writing, documentation and office productivity.",
+            "low profile typing programming developer productivity keyboard"),
+
+        new(
+            "Electronics",
+            "Wireless Travel Keyboard",
+            3999,
+            "Compact wireless keyboard designed for portable use.",
+            "Lightweight keyboard for professionals who work while travelling.",
+            "Bluetooth connectivity, compact layout, rechargeable battery, lightweight design.",
+            "Travel, remote work, tablets, laptops and mobile productivity.",
+            "portable compact travel bluetooth wireless keyboard"),
+
+        new(
+            "Electronics",
+            "Ergonomic Productivity Keyboard",
+            6999,
+            "Ergonomic keyboard designed for long typing sessions.",
+            "Comfort-focused keyboard for programmers and professionals who type throughout the day.",
+            "Split layout, wrist support, ergonomic key positioning, programmable shortcuts.",
+            "Programming, writing, data entry and long working sessions.",
+            "ergonomic comfortable programming keyboard long typing"),
+
+        // ============================================================
+        // MICE
+        // ============================================================
+
+        new(
+            "Gaming",
+            "Esports Lightweight Gaming Mouse",
+            5999,
+            "Lightweight gaming mouse designed for competitive players.",
+            "Ultra-light mouse optimized for fast flicks and precise competitive aiming.",
+            "59g weight, 26000 DPI sensor, 1000Hz polling, low-latency wireless.",
+            "FPS games, esports, competitive aiming and fast mouse movement.",
+            "esports lightweight gaming mouse fast precise FPS"),
+
+        new(
+            "Gaming",
+            "Precision FPS Gaming Mouse",
+            6499,
+            "High-precision mouse designed for FPS gaming.",
+            "Accurate gaming mouse for players who need precise aim and consistent tracking.",
+            "High DPI optical sensor, adjustable sensitivity, low click latency.",
+            "FPS, tactical shooters, competitive gaming.",
+            "precision accurate FPS gaming mouse competitive aim"),
+
+        new(
+            "Electronics",
+            "Silent Office Mouse",
+            2299,
+            "Quiet wireless mouse designed for office productivity.",
+            "Comfortable mouse with quiet clicks for offices and shared environments.",
+            "Silent buttons, ergonomic shape, Bluetooth, long battery life.",
+            "Office work, meetings, libraries and quiet workspaces.",
+            "silent quiet office mouse productivity bluetooth"),
+
+        new(
+            "Electronics",
+            "Ergonomic Vertical Mouse",
+            3299,
+            "Vertical ergonomic mouse designed to reduce wrist strain.",
+            "Comfort-oriented mouse for professionals working at a computer for extended periods.",
+            "Vertical grip, adjustable DPI, ergonomic thumb rest.",
+            "Programming, office work and long computer sessions.",
+            "ergonomic vertical mouse comfortable wrist programming office"),
+
+        // ============================================================
+        // LAPTOPS
+        // ============================================================
+
+        new(
+            "Computers",
+            "Developer Performance Laptop",
+            79999,
+            "High-performance laptop designed for software development.",
+            "Powerful programming laptop for developers running IDEs, containers and development tools.",
+            "32GB RAM, 1TB SSD, high-performance processor, 15-inch display.",
+            "Software development, coding, Docker, IDEs, backend development.",
+            "developer programming software development coding laptop IDE"),
+
+        new(
+            "Computers",
+            "Mobile Developer Laptop",
+            69999,
+            "Portable laptop designed for developers who work remotely.",
+            "Lightweight programming laptop balancing performance and portability.",
+            "16GB RAM, 1TB SSD, efficient processor, lightweight chassis.",
+            "Remote development, travel, programming and cloud development.",
+            "portable developer programming laptop remote work travel"),
+
+        new(
+            "Computers",
+            "AI Development Laptop",
+            119999,
+            "High-performance laptop designed for AI and machine learning development.",
+            "Powerful development machine for local AI experimentation and machine learning workflows.",
+            "64GB RAM, dedicated GPU, 2TB SSD, high-end processor.",
+            "Machine learning, AI development, Python, data science and model experimentation.",
+            "AI machine learning GPU developer laptop Python data science"),
+
+        new(
+            "Computers",
+            "Business Productivity Laptop",
+            59999,
+            "Reliable laptop designed for business productivity.",
+            "Business laptop for documents, spreadsheets, video meetings and everyday professional work.",
+            "16GB RAM, 512GB SSD, long battery life, webcam.",
+            "Business work, spreadsheets, presentations, meetings and remote work.",
+            "business office productivity laptop meetings remote work"),
+
+        // ============================================================
+        // MONITORS
+        // ============================================================
+
+        new(
+            "Electronics",
+            "Esports High Refresh Monitor",
+            24999,
+            "High-refresh gaming monitor designed for competitive play.",
+            "Fast gaming display optimized for esports and competitive FPS gaming.",
+            "240Hz refresh rate, 1ms response time, adaptive sync.",
+            "Esports, FPS games, competitive gaming and fast motion.",
+            "240Hz high refresh fast response esports gaming monitor"),
+
+        new(
+            "Electronics",
+            "4K Productivity Monitor",
+            32999,
+            "High-resolution monitor for professional productivity.",
+            "Sharp 4K display for developers, office professionals and content creators.",
+            "4K resolution, USB-C, 32-inch panel, ergonomic stand.",
+            "Programming, documents, spreadsheets and productivity.",
+            "4K monitor productivity programming office USB-C"),
+
+        new(
+            "Electronics",
+            "Color Accurate Creator Monitor",
+            44999,
+            "Professional monitor designed for content creation.",
+            "Color-accurate display for photographers, designers and video creators.",
+            "Wide color gamut, factory calibration, 4K resolution.",
+            "Photo editing, video editing, graphic design and content creation.",
+            "color accurate monitor photography design video editing creator"),
+
+        // ============================================================
+        // HEADPHONES
+        // ============================================================
+
+        new(
+            "Audio",
+            "Competitive Gaming Headset",
+            8999,
+            "Gaming headset designed for competitive players.",
+            "Gaming headset with precise positional audio for competitive multiplayer games.",
+            "Low-latency audio, directional sound, noise-isolating microphone.",
+            "FPS games, esports, competitive multiplayer.",
+            "competitive gaming headset positional audio esports FPS"),
+
+        new(
+            "Audio",
+            "Noise Cancelling Office Headphones",
+            12999,
+            "Noise cancelling headphones designed for focused work.",
+            "Comfortable headphones for meetings and concentration in noisy environments.",
+            "Active noise cancellation, microphone, Bluetooth, long battery life.",
+            "Office work, travel, video meetings and focused productivity.",
+            "noise cancelling office headphones meetings productivity travel"),
+
+        new(
+            "Audio",
+            "Studio Monitoring Headphones",
+            15999,
+            "Professional headphones designed for accurate audio monitoring.",
+            "Detailed studio headphones for music production and audio editing.",
+            "Flat frequency response, wired connection, over-ear design.",
+            "Music production, mixing, recording and audio editing.",
+            "studio monitoring headphones music production mixing recording"),
+
+        // ============================================================
+        // CAMERAS
+        // ============================================================
+
+        new(
+            "Cameras",
+            "Travel Mirrorless Camera",
+            74999,
+            "Compact mirrorless camera designed for travel photography.",
+            "Lightweight interchangeable-lens camera for photographers travelling frequently.",
+            "24MP sensor, image stabilization, compact body, 4K video.",
+            "Travel photography, street photography and everyday shooting.",
+            "travel photography mirrorless compact camera lightweight"),
+
+        new(
+            "Cameras",
+            "Professional Portrait Camera",
+            129999,
+            "High-resolution mirrorless camera designed for professional photography.",
+            "Professional camera optimized for portraits and detailed still photography.",
+            "Full-frame sensor, high resolution, eye autofocus, RAW support.",
+            "Portrait photography, professional photography and studio work.",
+            "professional portrait camera full frame photography RAW"),
+
+        new(
+            "Cameras",
+            "Action Adventure Camera",
+            29999,
+            "Rugged camera designed for outdoor adventures.",
+            "Compact action camera for sports, travel and outdoor activities.",
+            "4K video, waterproof body, stabilization, wide-angle lens.",
+            "Adventure travel, cycling, hiking, sports and underwater shooting.",
+            "action camera adventure travel sports waterproof 4K"),
+
+        // ============================================================
+        // CHAIRS
+        // ============================================================
+
+        new(
+            "Furniture",
+            "Ergonomic Coding Chair",
+            14999,
+            "Ergonomic office chair designed for long programming sessions.",
+            "Comfortable chair for developers who sit at a computer throughout the day.",
+            "Adjustable lumbar support, breathable mesh, adjustable height, padded seat.",
+            "Programming, software development, remote work and long desk sessions.",
+            "comfortable chair programming coding developer ergonomic long hours"),
+
+        new(
+            "Furniture",
+            "Executive Office Chair",
+            18999,
+            "Premium office chair designed for professional workspaces.",
+            "Supportive executive chair for long business and office sessions.",
+            "High-back design, padded cushioning, adjustable armrests and lumbar support.",
+            "Office work, management, meetings and professional workspaces.",
+            "executive office chair comfortable business high back"),
+
+        new(
+            "Furniture",
+            "Compact Home Office Chair",
+            8999,
+            "Space-efficient ergonomic chair for home offices.",
+            "Compact comfortable chair for working from home in smaller rooms.",
+            "Adjustable height, compact frame, breathable back support.",
+            "Home office, remote work, study and apartment workspaces.",
+            "compact home office chair remote work small space"),
+
+        new(
+            "Furniture",
+            "Gaming Chair",
+            16999,
+            "Supportive gaming chair designed for extended gaming sessions.",
+            "Comfortable gaming seat with strong back support for long gaming sessions.",
+            "High back, adjustable armrests, lumbar cushion, reclining back.",
+            "Gaming, esports practice and long PC sessions.",
+            "gaming chair esports comfortable long sessions lumbar"),
+
+        // ============================================================
+        // DESKS
+        // ============================================================
+
+        new(
+            "Furniture",
+            "Developer Standing Desk",
+            21999,
+            "Height-adjustable standing desk designed for developers.",
+            "Flexible workstation for programmers who alternate between sitting and standing.",
+            "Electric height adjustment, memory presets, cable management.",
+            "Programming, remote work and ergonomic office setups.",
+            "standing desk developer programming ergonomic workstation"),
+
+        new(
+            "Furniture",
+            "Gaming Desk",
+            12999,
+            "Large gaming desk designed for PC gaming setups.",
+            "Spacious gaming workstation for monitors, keyboard, mouse and gaming accessories.",
+            "Large surface, cable management, headphone hook.",
+            "Gaming setups, streaming and esports practice.",
+            "gaming desk esports streaming PC setup large"),
+
+        // ============================================================
+        // FITNESS
+        // ============================================================
+
+        new(
+            "Fitness",
+            "Running Smart Watch",
+            18999,
+            "Smart watch designed for runners and fitness enthusiasts.",
+            "Fitness watch focused on running performance and workout tracking.",
+            "GPS, heart-rate tracking, running metrics, workout modes.",
+            "Running, jogging, cardio workouts and fitness tracking.",
+            "running fitness watch GPS workout tracking"),
+
+        new(
+            "Fitness",
+            "Adventure Fitness Watch",
+            24999,
+            "Rugged fitness watch designed for outdoor activities.",
+            "Durable GPS watch for hiking, cycling and outdoor training.",
+            "GPS, altimeter, compass, long battery life, water resistance.",
+            "Hiking, cycling, trekking and outdoor fitness.",
+            "adventure fitness watch hiking cycling GPS outdoor"),
+
+        // ============================================================
+        // STORAGE
+        // ============================================================
+
+        new(
+            "Electronics",
+            "Portable External SSD",
+            7999,
+            "Fast portable SSD designed for transferring large files.",
+            "Compact high-speed external storage for professionals and creators.",
+            "1TB capacity, USB-C, high sequential transfer speed.",
+            "Video editing, backups, photography and large file transfers.",
+            "portable SSD fast storage USB-C video editing backup"),
+
+        new(
+            "Electronics",
+            "High Capacity Backup Drive",
+            11999,
+            "Large external drive designed for backups and archives.",
+            "Reliable storage for photographers, businesses and home backups.",
+            "4TB capacity, USB connectivity, backup software support.",
+            "Backup, photo storage, document archives and media libraries.",
+            "backup external drive high capacity storage archive")
+    ];
 }

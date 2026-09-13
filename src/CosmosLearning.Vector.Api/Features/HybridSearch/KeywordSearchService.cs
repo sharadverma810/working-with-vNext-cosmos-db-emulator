@@ -12,6 +12,8 @@ public sealed class KeywordSearchService
             "and",
             "are",
             "at",
+            "be",
+            "by",
             "for",
             "from",
             "i",
@@ -22,10 +24,42 @@ public sealed class KeywordSearchService
             "of",
             "on",
             "or",
+            "someone",
+            "that",
             "the",
+            "this",
             "to",
             "with"
         };
+
+    /*
+     * Tokenizer supports:
+     *
+     * Normal words:
+     *   keyboard
+     *   gaming
+     *   competitive
+     *
+     * Compound product terms:
+     *   anti-ghosting
+     *   low-latency
+     *   noise-cancelling
+     *
+     * Technical specifications:
+     *   8000Hz
+     *   0.5ms
+     *   2.4GHz
+     *   240Hz
+     *   1TB
+     *   32GB
+     *   26000DPI
+     *   4K
+     */
+    private static readonly Regex TokenRegex =
+        new(
+            @"(?:\d+(?:\.\d+)?(?:hz|khz|mhz|ghz|ms|s|gb|tb|mb|kb|dpi|fps|mp|inch|inches|mm|cm|kg|g)|[a-z0-9]+(?:[-_][a-z0-9]+)*)",
+            RegexOptions.Compiled |
+            RegexOptions.IgnoreCase);
 
     public IReadOnlyList<KeywordSearchResult> Search(
         string query,
@@ -53,6 +87,9 @@ public sealed class KeywordSearchService
             new Dictionary<string, int>(
                 StringComparer.OrdinalIgnoreCase);
 
+        /*
+         * Calculate how many documents contain each term.
+         */
         foreach (string[] tokens in tokenMap.Values)
         {
             foreach (string term in tokens.Distinct(
@@ -105,8 +142,11 @@ public sealed class KeywordSearchService
         const double k1 = 1.2;
         const double b = 0.75;
 
-        if (documentTerms.Count == 0)
+        if (documentTerms.Count == 0 ||
+            averageDocumentLength <= 0)
+        {
             return 0;
+        }
 
         var termFrequency =
             documentTerms
@@ -134,8 +174,25 @@ public sealed class KeywordSearchService
                 documentFrequency.GetValueOrDefault(term);
 
             if (df == 0)
+            {
                 continue;
+            }
 
+            /*
+             * Standard BM25 inverse document frequency.
+             *
+             * Rare terms receive more weight.
+             *
+             * Example:
+             *
+             * "keyboard"
+             *     appears in many documents
+             *     -> lower IDF
+             *
+             * "8000hz"
+             *     appears in fewer documents
+             *     -> higher IDF
+             */
             double idf =
                 Math.Log(
                     1 +
@@ -149,8 +206,10 @@ public sealed class KeywordSearchService
                     1 -
                     b +
                     b *
-                    (documentTerms.Count /
-                     averageDocumentLength)
+                    (
+                        documentTerms.Count /
+                        averageDocumentLength
+                    )
                 );
 
             double termScore =
@@ -168,11 +227,14 @@ public sealed class KeywordSearchService
 
     private static string[] Tokenize(string text)
     {
-        return Regex
-            .Matches(
-                text.ToLowerInvariant(),
-                @"[a-z0-9]+")
-            .Select(m => m.Value)
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return [];
+        }
+
+        return TokenRegex
+            .Matches(text.ToLowerInvariant())
+            .Select(match => match.Value)
             .Where(term => !StopWords.Contains(term))
             .ToArray();
     }
