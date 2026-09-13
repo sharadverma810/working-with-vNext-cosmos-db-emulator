@@ -1,8 +1,48 @@
-@host = https://localhost:7121
+### Cosmos Learning - API Sample Requests
+### ============================================================
+###
+### Purpose:
+###   End-to-end HTTP examples for the current learning project.
+###
+### Recommended order:
+###   1. Basic Product CRUD
+###   2. Structured product query
+###   3. Pagination / continuation tokens
+###   4. Error handling
+###   5. Global exception handling
+###   6. Vector search + Ollama embeddings
+###   7. Large vector-search catalog
+###   8. Hybrid search
+###   9. Hybrid search modes
+###  10. Weighted RRF
+###  11. Metadata filtering
+###  12. Ranking diagnostics
+###
+### Prerequisites:
+###   - Cosmos DB vNext Emulator running
+###   - API running
+###   - Ollama running for vector/hybrid scenarios
+###   - mxbai-embed-large installed for vector/hybrid scenarios
+###
+### Current local API:
+###   http://localhost:5142
+###
+### ============================================================
+
+@host = http://localhost:5142
+
 @productId = product-demo-001
 @category = Electronics
 
-### Create a product
+###
+### ============================================================
+### 01 - BASIC CRUD
+### ============================================================
+
+### ------------------------------------------------------------
+### 01.1 Create a product
+### ------------------------------------------------------------
+
 POST {{host}}/products
 Content-Type: application/json
 
@@ -24,8 +64,14 @@ Content-Type: application/json
   "updatedAt": "2026-09-05T00:00:00Z",
   "availableFrom": "2026-09-05T00:00:00Z",
   "warrantyDetails": "1 year limited warranty",
-  "tags": ["wireless", "audio"],
-  "supportedCountries": ["United States", "Canada"],
+  "tags": [
+    "wireless",
+    "audio"
+  ],
+  "supportedCountries": [
+    "United States",
+    "Canada"
+  ],
   "relatedProducts": [],
   "manufacturer": {
     "name": "Contoso Audio",
@@ -50,15 +96,25 @@ Content-Type: application/json
   "reviews": []
 }
 
-### List products
+### ------------------------------------------------------------
+### 01.2 List products
+### ------------------------------------------------------------
+
 GET {{host}}/products
 Accept: application/json
 
-### Point read: id and partition key are both required
+### ------------------------------------------------------------
+### 01.3 Point read
+###     Both id and partition key/category are required.
+### ------------------------------------------------------------
+
 GET {{host}}/products/{{productId}}?category={{category}}
 Accept: application/json
 
-### Replace a product
+### ------------------------------------------------------------
+### 01.4 Replace a product
+### ------------------------------------------------------------
+
 PUT {{host}}/products/{{productId}}
 Content-Type: application/json
 
@@ -80,8 +136,15 @@ Content-Type: application/json
   "updatedAt": "2026-09-05T01:00:00Z",
   "availableFrom": "2026-09-05T00:00:00Z",
   "warrantyDetails": "2 year limited warranty",
-  "tags": ["wireless", "audio", "featured"],
-  "supportedCountries": ["United States", "Canada"],
+  "tags": [
+    "wireless",
+    "audio",
+    "featured"
+  ],
+  "supportedCountries": [
+    "United States",
+    "Canada"
+  ],
   "relatedProducts": [],
   "manufacturer": {
     "name": "Contoso Audio",
@@ -106,52 +169,35 @@ Content-Type: application/json
   "reviews": []
 }
 
-### Delete a product: id and partition key are both required
+### ------------------------------------------------------------
+### 01.5 Delete a product
+### ------------------------------------------------------------
+
 DELETE {{host}}/products/{{productId}}?category={{category}}
 
-### Actual HTTP QUERY: simple structured category and price filter
-QUERY {{host}}/products/query
-Content-Type: application/json
+###
+### ============================================================
+### 02 - ACTUAL HTTP QUERY METHOD
+### ============================================================
+###
+### This is a literal HTTP QUERY request, not POST /query.
+### The endpoint accepts structured JSON filters and builds a
+### parameterized Cosmos DB query.
+###
+### Supported concepts demonstrated below include:
+###   - category
+###   - price range
+###   - date range
+###   - IS_NULL
+###   - IS_DEFINED
+###   - nested objects
+###   - arrays / ARRAY_CONTAINS
+###   - EXISTS over nested reviews
+###   - sorting
+###   - pagination
+###
+### ============================================================
 Accept: application/json
-
-{
-  "category": "Electronics",
-  "minimumPrice": 100,
-  "maximumPrice": 500,
-  "pageSize": 10
-}
-
-### QUERY: date range using parameterized createdAt bounds
-QUERY {{host}}/products/query
-Content-Type: application/json
-
-{
-  "createdAfter": "2025-01-01T00:00:00Z",
-  "createdBefore": "2025-12-31T23:59:59Z",
-  "pageSize": 10
-}
-
-### QUERY: explicit JSON null values using IS_NULL
-QUERY {{host}}/products/query
-Content-Type: application/json
-
-{
-  "warrantyIsNull": true,
-  "pageSize": 10
-}
-
-### QUERY: missing properties using IS_DEFINED
-QUERY {{host}}/products/query
-Content-Type: application/json
-
-{
-  "warrantyIsMissing": true,
-  "pageSize": 10
-}
-
-### QUERY: nested object fields
-QUERY {{host}}/products/query
-Content-Type: application/json
 
 {
   "manufacturerCountry": "United States",
@@ -160,88 +206,61 @@ Content-Type: application/json
   "pageSize": 10
 }
 
-### QUERY: array membership using ARRAY_CONTAINS
-QUERY {{host}}/products/query
-Content-Type: application/json
-
-{
-  "tags": ["wireless"],
-  "supportedCountry": "Canada",
-  "pageSize": 10
-}
-
-### QUERY: nested array filtering using EXISTS over reviews
-QUERY {{host}}/products/query
-Content-Type: application/json
-
-{
-  "reviewMinimumRating": 4,
-  "pageSize": 10
-}
-
-### QUERY: complex combination of category, status, price, rating, and tag
-QUERY {{host}}/products/query
-Content-Type: application/json
-
-{
-  "category": "Electronics",
-  "status": "Active",
-  "minimumPrice": 100,
-  "maximumPrice": 1000,
-  "minimumRating": 4,
-  "isActive": true,
-  "tags": ["wireless"],
-  "sortField": "price",
-  "sortDirection": "ASC",
-  "pageSize": 10
-}
-
-
-### Pagination: using continuation token for next page
+###
 ### ============================================================
-### Product Pagination - First Page
+### 03 - CONTINUATION-TOKEN PAGINATION
 ### ============================================================
+
+### ------------------------------------------------------------
+### 03.1 First page
+### ------------------------------------------------------------
 
 GET {{host}}/products/pages?pageSize=10
 Accept: application/json
 
-
-### ============================================================
-### CONTINUATION TOKEN DEMO
-### PAGE 1
-### ============================================================
+### ------------------------------------------------------------
+### 03.2 Continuation-token demo - Page 1
+### ------------------------------------------------------------
 
 GET {{host}}/products/pages?pageSize=1
 Accept: application/json
 
-### ============================================================
-### CONTINUATION TOKEN DEMO - PAGE 2
-### ============================================================
+### ------------------------------------------------------------
+### 03.3 Continuation-token demo - Page 2
+###
+### IMPORTANT:
+### Replace the token below with the continuationToken returned
+### by the previous response if your current data produces a
+### different token.
+### ------------------------------------------------------------
 
 GET {{host}}/products/pages?pageSize=5
 Accept: application/json
 x-continuation-token: [{"compositeToken":{"token":null,"range":{"min":"","max":"FF"}},"resumeValues":["product-00001"],"rid":"AgAAAIIAAADpAwAAfwQAAAAAAAA=","skipCount":1}]
 
-
-### ============================================================
-### CONTINUATION TOKEN DEMO - PAGE 3
-### ============================================================
+### ------------------------------------------------------------
+### 03.4 Continuation-token demo - Page 3
+### ------------------------------------------------------------
 
 GET {{host}}/products/pages?pageSize=1
 Accept: application/json
 x-continuation-token: [{"compositeToken":{"token":null,"range":{"min":"","max":"FF"}},"resumeValues":["product-00006"],"rid":"AgAAAIIAAADuAwAAvQQAAAAAAAA=","skipCount":1}]
 
-##**********************************Error Handling Scenarios**********************************
+###
 ### ============================================================
-### ERROR HANDLING - SUCCESS
+### 04 - ERROR HANDLING
 ### ============================================================
+
+### ------------------------------------------------------------
+### 04.1 Error handling - successful request
+### ------------------------------------------------------------
 
 GET {{host}}/error-handling/success
 Accept: application/json
 
-### ============================================================
-### ERROR HANDLING - VALIDATION FAILURE
-### ============================================================
+### ------------------------------------------------------------
+### 04.2 Error handling - validation failure
+### ------------------------------------------------------------
 
 POST {{host}}/error-handling/validation
 Content-Type: application/json
@@ -251,75 +270,817 @@ Content-Type: application/json
   "quantity": 0
 }
 
-### ============================================================
-### ERROR HANDLING - COSMOS NOT FOUND
-### ============================================================
+### ------------------------------------------------------------
+### 04.3 Error handling - Cosmos not found
+### ------------------------------------------------------------
 
 GET {{host}}/error-handling/cosmos/not-found
 Accept: application/json
 
-### ============================================================
-### ERROR HANDLING - COSMOS CONFLICT
-### ============================================================
+### ------------------------------------------------------------
+### 04.4 Error handling - Cosmos conflict
+### ------------------------------------------------------------
 
 POST {{host}}/error-handling/cosmos/conflict
 Accept: application/json
 
-### ============================================================
-### ERROR HANDLING - COSMOS THROTTLING
-### ============================================================
+### ------------------------------------------------------------
+### 04.5 Error handling - Cosmos throttling
+### ------------------------------------------------------------
 
 GET {{host}}/error-handling/cosmos/throttling
 Accept: application/json
 
-### ============================================================
-### ERROR HANDLING - COSMOS UNAVAILABLE
-### ============================================================
+### ------------------------------------------------------------
+### 04.6 Error handling - Cosmos unavailable
+### ------------------------------------------------------------
 
 GET {{host}}/error-handling/cosmos/unavailable
 Accept: application/json
 
-### ============================================================
-### ERROR HANDLING - UNEXPECTED ERROR
-### ============================================================
+### ------------------------------------------------------------
+### 04.7 Error handling - unexpected error
+### ------------------------------------------------------------
 
 GET {{host}}/error-handling/unexpected
 Accept: application/json
 
-
-### ============================================================
-### ERROR HANDLING - CANCELLATION
-### ============================================================
+### ------------------------------------------------------------
+### 04.8 Error handling - cancellation
+### ------------------------------------------------------------
 
 GET {{host}}/error-handling/cancellation
 Accept: application/json
 
+###
+### ============================================================
+### 05 - GLOBAL EXCEPTION HANDLING
+### ============================================================
 
-
-##******** Global error handling scenarios ********
-
-### Global Exception Demo - Success
+### ------------------------------------------------------------
+### 05.1 Global exception demo - success
+### ------------------------------------------------------------
 
 GET {{host}}/global-exception-demo/success
-
 Accept: application/json
 
-
-### Global Exception Demo - Unhandled Exception
+### ------------------------------------------------------------
+### 05.2 Global exception demo - unhandled exception
+### ------------------------------------------------------------
 
 GET {{host}}/global-exception-demo/unhandled
-
 Accept: application/json
 
-### Global Exception Demo - Nested Exception
+### ------------------------------------------------------------
+### 05.3 Global exception demo - nested exception
+### ------------------------------------------------------------
 
 GET {{host}}/global-exception-demo/nested
-
 Accept: application/json
 
-
-### Global Exception Demo - Async Exception
+### ------------------------------------------------------------
+### 05.4 Global exception demo - async exception
+### ------------------------------------------------------------
 
 GET {{host}}/global-exception-demo/async
-
 Accept: application/json
+
+###
+### ============================================================
+### 06 - VECTOR SEARCH
+### ============================================================
+###
+### Prerequisites:
+###   - Ollama running
+###   - mxbai-embed-large installed
+###   - VectorDemoDb available
+###
+### Existing vector container:
+###   Products
+###
+### Embeddings:
+###   1024 dimensions
+###   float32
+###   cosine
+###   DiskANN
+###
+### ============================================================
+
+### ------------------------------------------------------------
+### 06.1 Seed the original vector-search catalog
+### ------------------------------------------------------------
+
+POST {{host}}/api/vector/seed
+Accept: application/json
+
+### ------------------------------------------------------------
+### 06.2 Generate a large vector-search catalog
+###
+### This reaches the requested total in the Products container.
+### The demonstrated target is 1,000 products.
+### ------------------------------------------------------------
+
+POST {{host}}/api/vector/seed-large?count=1000
+Accept: application/json
+
+### ------------------------------------------------------------
+### 06.3 Vector search - semantic gaming intent
+### ------------------------------------------------------------
+
+POST {{host}}/api/vector/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "I need a keyboard for competitive gaming",
+  "category": "Gaming",
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+### ------------------------------------------------------------
+### 06.4 Vector search - travel photography
+### ------------------------------------------------------------
+
+POST {{host}}/api/vector/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "professional camera for travel photography",
+  "maximumPrice": 100000,
+  "top": 5
+}
+
+### ------------------------------------------------------------
+### 06.5 Vector search - software development
+### ------------------------------------------------------------
+
+POST {{host}}/api/vector/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "laptop for software development and programming",
+  "maximumPrice": 120000,
+  "top": 5
+}
+
+### ------------------------------------------------------------
+### 06.6 Vector search - office ergonomics
+### ------------------------------------------------------------
+
+POST {{host}}/api/vector/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "comfortable chair for working at a computer all day",
+  "maximumPrice": 30000,
+  "top": 5
+}
+
+### ------------------------------------------------------------
+### 06.7 Vector search - fitness
+### ------------------------------------------------------------
+
+POST {{host}}/api/vector/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "fitness watch for running and workout tracking",
+  "maximumPrice": 30000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 07 - HYBRID SEARCH: INITIALIZE AND SEED
+### ============================================================
+###
+### Hybrid container:
+###   VectorDemoDb / HybridProducts
+###
+### Partition key:
+###   /category
+###
+### Vector:
+###   /embedding
+###   1024 dimensions
+###   float32
+###   cosine
+###   DiskANN
+###
+### Lexical:
+###   /searchText
+###   application-side BM25-style ranking
+###
+### Fusion:
+###   Weighted Reciprocal Rank Fusion
+###   rankConstant = 60
+###   vectorCandidateCount = 100
+###
+### ============================================================
+
+### ------------------------------------------------------------
+### 07.1 Seed the hybrid catalog
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/seed?count=1000
+Accept: application/json
+
+### ------------------------------------------------------------
+### 07.2 Reset ONLY the hybrid catalog
+###
+### WARNING:
+### This does not reset the original Products container.
+### ------------------------------------------------------------
+
+DELETE {{host}}/api/hybrid/reset
+Accept: application/json
+
+### ------------------------------------------------------------
+### 07.3 Re-seed after reset
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/seed?count=1000
+Accept: application/json
+
+###
+### ============================================================
+### 08 - HYBRID SEARCH: SEMANTIC INTENT
+### ============================================================
+###
+### This demonstrates a query where the meaning matters more
+### than exact word matching.
+###
+### Expected family:
+###   Esports Rapid Mechanical Keyboard
+###
+### ============================================================
+
+### ------------------------------------------------------------
+### 08.1 "Something for esports with very fast response"
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "something for esports with very fast response",
+  "mode": "hybrid",
+  "vectorWeight": 1,
+  "keywordWeight": 1,
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 09 - HYBRID SEARCH: EXACT TECHNICAL TERMS
+### ============================================================
+###
+### This demonstrates why lexical retrieval remains valuable
+### alongside semantic retrieval.
+###
+### Query:
+###   8000Hz 0.5ms anti-ghosting
+###
+### These are technical/product terms that benefit from exact
+### token matching.
+###
+### ============================================================
+
+### ------------------------------------------------------------
+### 09.1 Balanced hybrid
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "8000Hz 0.5ms anti-ghosting",
+  "mode": "hybrid",
+  "vectorWeight": 1,
+  "keywordWeight": 1,
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 10 - HYBRID SEARCH: SEMANTIC PARAPHRASE
+### ============================================================
+###
+### The exact phrase "types code all day" does not need to occur
+### in the product name for semantic retrieval to understand the
+### intent.
+###
+### Expected family:
+###   Ergonomic Productivity Keyboard
+###
+### ============================================================
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "a keyboard for someone who types code all day",
+  "mode": "hybrid",
+  "vectorWeight": 1,
+  "keywordWeight": 1,
+  "maximumPrice": 10000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 11 - HYBRID SEARCH: DIFFERENT INTENT
+### ============================================================
+###
+### Expected family:
+###   Silent Office Keyboard
+###
+### ============================================================
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "quiet keyboard for an office shared workspace",
+  "mode": "hybrid",
+  "vectorWeight": 1,
+  "keywordWeight": 1,
+  "maximumPrice": 10000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 12 - VECTOR-ONLY MODE
+### ============================================================
+###
+### Only Cosmos vector retrieval participates.
+###
+### Expected diagnostics:
+###   vectorRank populated
+###   keywordRank = null
+###
+### ============================================================
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "keyboard for competitive gaming",
+  "mode": "vector",
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 13 - KEYWORD-ONLY MODE
+### ============================================================
+###
+### Only application-side BM25-style lexical ranking participates.
+###
+### Expected diagnostics:
+###   keywordRank populated
+###   vectorRank = null
+###
+### ============================================================
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "8000Hz 0.5ms anti-ghosting",
+  "mode": "keyword",
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 14 - HYBRID MODE WITH METADATA FILTERS
+### ============================================================
+###
+### Demonstrates structured filtering + semantic/lexical ranking.
+###
+### ============================================================
+
+### ------------------------------------------------------------
+### 14.1 Category filter
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "gaming keyboard",
+  "mode": "hybrid",
+  "category": "Gaming",
+  "top": 5
+}
+
+### ------------------------------------------------------------
+### 14.2 Minimum + maximum price
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "gaming keyboard",
+  "mode": "hybrid",
+  "minimumPrice": 5000,
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+### ------------------------------------------------------------
+### 14.3 Category + price range
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "gaming keyboard",
+  "mode": "hybrid",
+  "category": "Gaming",
+  "minimumPrice": 5000,
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 15 - WEIGHTED RRF
+### ============================================================
+###
+### RRF contribution:
+###
+###   contribution = weight / (rankConstant + rank)
+###
+### Default:
+###   rankConstant = 60
+###
+### The following requests use the SAME query so that the effect
+### of weighting can be compared directly.
+###
+### ============================================================
+
+### ------------------------------------------------------------
+### 15.1 Balanced RRF
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "8000Hz 0.5ms anti-ghosting",
+  "mode": "hybrid",
+  "vectorWeight": 1,
+  "keywordWeight": 1,
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+### ------------------------------------------------------------
+### 15.2 Vector-heavy RRF
+### ------------------------------------------------------------
+###
+### Vector signal has twice the weight of keyword signal.
+###
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "8000Hz 0.5ms anti-ghosting",
+  "mode": "hybrid",
+  "vectorWeight": 2,
+  "keywordWeight": 1,
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+### ------------------------------------------------------------
+### 15.3 Keyword-heavy RRF
+### ------------------------------------------------------------
+###
+### Keyword signal has twice the weight of vector signal.
+###
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "8000Hz 0.5ms anti-ghosting",
+  "mode": "hybrid",
+  "vectorWeight": 1,
+  "keywordWeight": 2,
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 16 - HYBRID SEARCH RANKING DIAGNOSTICS
+### ============================================================
+###
+### Inspect the response fields:
+###
+###   vectorRank
+###   keywordRank
+###   vectorContribution
+###   keywordContribution
+###   rrfScore
+###
+### Example:
+###
+###   vectorRank = 30
+###   keywordRank = 2
+###
+###   vectorContribution = 1 / (60 + 30)
+###   keywordContribution = 1 / (60 + 2)
+###
+###   rrfScore = vectorContribution + keywordContribution
+###
+### ============================================================
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "8000Hz 0.5ms anti-ghosting",
+  "mode": "hybrid",
+  "vectorWeight": 1,
+  "keywordWeight": 1,
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 17 - HYBRID SEARCH EXPLANATION
+### ============================================================
+###
+### The response should contain:
+###
+###   searchExplanation.algorithm
+###   searchExplanation.rankConstant
+###   searchExplanation.vectorCandidateCount
+###   searchExplanation.vectorWeight
+###   searchExplanation.keywordWeight
+###   searchExplanation.vectorSearch
+###   searchExplanation.keywordSearch
+###   searchExplanation.fusion
+###
+### Expected configuration:
+###
+###   Weighted Reciprocal Rank Fusion
+###   rankConstant = 60
+###   vectorCandidateCount = 100
+###
+### ============================================================
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "professional camera for travel photography",
+  "mode": "hybrid",
+  "vectorWeight": 1,
+  "keywordWeight": 1,
+  "maximumPrice": 100000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 18 - HYBRID SEARCH VALIDATION / EDGE CASES
+### ============================================================
+
+### ------------------------------------------------------------
+### 18.1 Missing query
+### Expected:
+###   4xx validation response.
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "mode": "hybrid",
+  "top": 5
+}
+
+### ------------------------------------------------------------
+### 18.2 Both weights zero
+### Expected:
+###   validation error because at least one signal must be enabled.
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "gaming keyboard",
+  "mode": "hybrid",
+  "vectorWeight": 0,
+  "keywordWeight": 0,
+  "top": 5
+}
+
+### ------------------------------------------------------------
+### 18.3 Negative vector weight
+### Expected:
+###   validation error.
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "gaming keyboard",
+  "mode": "hybrid",
+  "vectorWeight": -1,
+  "keywordWeight": 1,
+  "top": 5
+}
+
+### ------------------------------------------------------------
+### 18.4 Invalid mode
+### Expected:
+###   validation error.
+### Supported:
+###   vector
+###   keyword
+###   hybrid
+### ------------------------------------------------------------
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "gaming keyboard",
+  "mode": "invalid",
+  "vectorWeight": 1,
+  "keywordWeight": 1,
+  "top": 5
+}
+
+###
+### ============================================================
+### 19 - TECHNICAL TOKENIZATION DEMO
+### ============================================================
+###
+### The keyword tokenizer intentionally preserves technical
+### product tokens such as:
+###
+###   8000Hz
+###   0.5ms
+###   2.4GHz
+###   240Hz
+###   1TB
+###   32GB
+###   26000DPI
+###
+### This request is useful for verifying exact technical matching.
+###
+### ============================================================
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "8000Hz 0.5ms anti-ghosting",
+  "mode": "keyword",
+  "maximumPrice": 20000,
+  "top": 10
+}
+
+###
+### ============================================================
+### 20 - COMPLETE HYBRID EXPERIMENT
+### ============================================================
+###
+### Use this request as the primary end-to-end demonstration:
+###
+###   1. Ollama embeds the query.
+###   2. Cosmos performs vector search with DiskANN.
+###   3. Application performs BM25-style lexical ranking.
+###   4. 100 vector candidates are considered.
+###   5. Weighted RRF combines the ranks.
+###   6. The API returns ranking diagnostics.
+###   7. The API returns searchExplanation.
+###
+### ============================================================
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "8000Hz 0.5ms anti-ghosting",
+  "mode": "hybrid",
+  "vectorWeight": 1,
+  "keywordWeight": 1,
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+###
+### ============================================================
+### 21 - LOCAL EMULATOR HYBRID-SEARCH NOTE
+### ============================================================
+###
+### Native FullTextScore() hybrid ranking was attempted during
+### development, but the local vNext emulator rejected the query
+### with:
+###
+###   SC2005: 'FullTextScore' is not a recognized built-in
+###   function name.
+###
+### Therefore the current local implementation intentionally uses:
+###
+###   Cosmos DB:
+###       VectorDistance + DiskANN
+###
+###   Application:
+###       BM25-style keyword ranking
+###       Weighted Reciprocal Rank Fusion
+###
+### The request below is the supported local hybrid endpoint.
+###
+### ============================================================
+
+POST {{host}}/api/hybrid/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "semantic search for a fast gaming keyboard",
+  "mode": "hybrid",
+  "vectorWeight": 1,
+  "keywordWeight": 1,
+  "maximumPrice": 20000,
+  "top": 5
+}
+
+###
+### ============================================================
+### END OF SAMPLE REQUESTS
+### ============================================================
+###
+### Suggested learning sequence:
+###
+###   CRUD
+###     ↓
+###   QUERY
+###     ↓
+###   Pagination
+###     ↓
+###   Error handling
+###     ↓
+###   Vector search
+###     ↓
+###   Large catalog
+###     ↓
+###   Keyword search
+###     ↓
+###   Hybrid search
+###     ↓
+###   Weighted RRF
+###     ↓
+###   Ranking diagnostics
+###
+### ============================================================
+"""
+
+path = Path("/mnt/data/api.http")
+path.write_text(api_http, encoding="utf-8")
+print(f"Created {path}")
