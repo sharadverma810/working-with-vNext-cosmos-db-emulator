@@ -31,6 +31,27 @@ public sealed class HybridSearchService
             request.Top = 5;
         }
 
+        if (request.VectorWeight < 0)
+        {
+            throw new ArgumentException(
+                "VectorWeight cannot be negative.",
+                nameof(request.VectorWeight));
+        }
+
+        if (request.KeywordWeight < 0)
+        {
+            throw new ArgumentException(
+                "KeywordWeight cannot be negative.",
+                nameof(request.KeywordWeight));
+        }
+
+        if (request.VectorWeight == 0 &&
+            request.KeywordWeight == 0)
+        {
+            throw new ArgumentException(
+                "At least one search weight must be greater than zero.");
+        }
+
         var mode = ParseMode(request.Mode);
 
         return mode switch
@@ -79,7 +100,6 @@ public sealed class HybridSearchService
                         VectorRank = index + 1,
                         KeywordRank = null,
 
-                        // RRF is not used in vector-only mode.
                         RrfScore = 0
                     })
             .ToList();
@@ -94,15 +114,6 @@ public sealed class HybridSearchService
                 request,
                 cancellationToken);
 
-        /*
-         * IMPORTANT:
-         *
-         * KeywordSearchService.Search() expects:
-         *
-         *     Search(query, documents)
-         *
-         * and returns KeywordSearchResult objects.
-         */
         var keywordResults =
             _keywordSearchService.Search(
                 request.Query,
@@ -123,7 +134,6 @@ public sealed class HybridSearchService
                         VectorRank = null,
                         KeywordRank = index + 1,
 
-                        // RRF is not used in keyword-only mode.
                         RrfScore = 0
                     })
             .ToList();
@@ -134,14 +144,13 @@ public sealed class HybridSearchService
         CancellationToken cancellationToken)
     {
         /*
-         * Retrieve more vector candidates than the requested Top value.
+         * We retrieve a larger vector candidate pool.
          *
-         * Example:
+         * Top = 5
+         * Vector candidates = 50
          *
-         *     Top = 5
-         *     Vector candidates = 50
-         *
-         * This gives RRF a larger candidate pool to work with.
+         * This allows documents that are not in the first
+         * five vector results to still participate in RRF.
          */
         const int vectorCandidateCount = 50;
 
@@ -151,42 +160,27 @@ public sealed class HybridSearchService
                 vectorCandidateCount,
                 cancellationToken);
 
-        /*
-         * Retrieve all documents matching the metadata filters.
-         *
-         * Keyword ranking is currently performed in the application
-         * using our BM25-style implementation.
-         */
         var keywordCandidates =
             await _repository.GetKeywordCandidatesAsync(
                 request,
                 cancellationToken);
 
-        /*
-         * IMPORTANT:
-         *
-         * KeywordSearchService.Search() expects:
-         *
-         *     Search(query, documents)
-         */
         var keywordResults =
             _keywordSearchService.Search(
                 request.Query,
                 keywordCandidates);
 
-        /*
-         * Combine the vector ranking and keyword ranking
-         * using Reciprocal Rank Fusion.
-         */
-        return ReciprocalRankFusion
-            .Fuse(
+        return ReciprocalRankFusion.Fuse(
                 vectorCandidates,
                 keywordResults,
-                request.Top)
+                request.Top,
+                request.VectorWeight,
+                request.KeywordWeight)
             .ToList();
     }
 
-    private static HybridSearchMode ParseMode(string? mode)
+    private static HybridSearchMode ParseMode(
+        string? mode)
     {
         if (string.IsNullOrWhiteSpace(mode))
         {

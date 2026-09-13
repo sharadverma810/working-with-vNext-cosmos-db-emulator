@@ -25,6 +25,12 @@ public sealed class HybridSearchResult
     [JsonPropertyName("keywordRank")]
     public int? KeywordRank { get; set; }
 
+    [JsonPropertyName("vectorContribution")]
+    public double VectorContribution { get; set; }
+
+    [JsonPropertyName("keywordContribution")]
+    public double KeywordContribution { get; set; }
+
     [JsonPropertyName("rrfScore")]
     public double RrfScore { get; set; }
 }

@@ -1,5 +1,4 @@
-﻿using CosmosLearning.Vector.Api.Infrastructure.CosmosDb;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace CosmosLearning.Vector.Api.Features.HybridSearch;
 
@@ -8,29 +7,36 @@ namespace CosmosLearning.Vector.Api.Features.HybridSearch;
 public sealed class HybridSearchController : ControllerBase
 {
     private readonly HybridSearchService _searchService;
-    private readonly CosmosHybridRepository _repository;
 
-    public HybridSearchController(
-        HybridSearchService searchService,
-        CosmosHybridRepository repository)
+    public HybridSearchController(HybridSearchService searchService)
     {
         _searchService = searchService;
-        _repository = repository;
     }
 
     [HttpPost("search")]
     public async Task<IActionResult> Search(
-        [FromBody] HybridSearchRequest request,
-        CancellationToken cancellationToken)
+    [FromBody] HybridSearchRequest request,
+    CancellationToken cancellationToken)
     {
-        var results = await _searchService.SearchAsync(
-            request,
-            cancellationToken);
+        var results =
+            await _searchService.SearchAsync(
+                request,
+                cancellationToken);
 
         return Ok(new
         {
             query = request.Query,
-            mode = request.Mode,
+
+            mode = string.IsNullOrWhiteSpace(request.Mode)
+                ? "hybrid"
+                : request.Mode,
+
+            vectorWeight = request.VectorWeight,
+
+            keywordWeight = request.KeywordWeight,
+
+            top = request.Top,
+
             results
         });
     }

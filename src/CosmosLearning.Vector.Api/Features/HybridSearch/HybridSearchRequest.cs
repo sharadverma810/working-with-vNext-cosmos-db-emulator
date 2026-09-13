@@ -13,4 +13,8 @@ public sealed class HybridSearchRequest
     public decimal? MaximumPrice { get; set; }
 
     public int Top { get; set; } = 5;
+
+    public double VectorWeight { get; set; } = 1.0;
+
+    public double KeywordWeight { get; set; } = 1.0;
 }

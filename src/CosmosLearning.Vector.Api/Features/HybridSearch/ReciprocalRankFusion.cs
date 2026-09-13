@@ -2,95 +2,130 @@
 
 public static class ReciprocalRankFusion
 {
+    private const int DefaultRankConstant = 60;
+
     public static IReadOnlyList<HybridSearchResult> Fuse(
         IReadOnlyList<HybridSearchCandidate> vectorResults,
         IReadOnlyList<KeywordSearchResult> keywordResults,
         int top,
-        int rankConstant = 60)
+        double vectorWeight = 1.0,
+        double keywordWeight = 1.0,
+        int rankConstant = DefaultRankConstant)
     {
-        var vectorRanks =
-            vectorResults
-                .Select(
-                    (document, index) =>
-                        new
-                        {
-                            document.Id,
-                            Rank = index + 1
-                        })
-                .ToDictionary(
-                    x => x.Id,
-                    x => x.Rank);
+        var scores =
+            new Dictionary<string, FusionScore>(
+                StringComparer.OrdinalIgnoreCase);
 
-        var keywordRanks =
-            keywordResults
-                .Select(
-                    (result, index) =>
-                        new
-                        {
-                            result.Document.Id,
-                            Rank = index + 1
-                        })
-                .ToDictionary(
-                    x => x.Id,
-                    x => x.Rank);
+        // ------------------------------------------------------------
+        // Vector results
+        // ------------------------------------------------------------
 
-        var documents =
-            vectorResults
-                .Concat(
-                    keywordResults.Select(
-                        x => x.Document))
-                .GroupBy(x => x.Id)
-                .Select(x => x.First());
-
-        var fused =
-            new List<HybridSearchResult>();
-
-        foreach (HybridSearchCandidate document in documents)
+        for (int i = 0; i < vectorResults.Count; i++)
         {
-            double score = 0;
+            var document = vectorResults[i];
 
-            int? vectorRank = null;
-            int? keywordRank = null;
+            int rank = i + 1;
 
-            if (vectorRanks.TryGetValue(
+            if (!scores.TryGetValue(
                     document.Id,
-                    out int vr))
+                    out var score))
             {
-                vectorRank = vr;
+                score = new FusionScore(document);
 
-                score +=
-                    1.0 /
-                    (rankConstant + vr);
+                scores[document.Id] = score;
             }
 
-            if (keywordRanks.TryGetValue(
-                    document.Id,
-                    out int kr))
-            {
-                keywordRank = kr;
+            score.VectorRank = rank;
 
-                score +=
-                    1.0 /
-                    (rankConstant + kr);
-            }
+            score.VectorContribution =
+                vectorWeight /
+                (rankConstant + rank);
 
-            fused.Add(
-                new HybridSearchResult
-                {
-                    Id = document.Id,
-                    Name = document.Name,
-                    Category = document.Category,
-                    Price = document.Price,
-                    Description = document.Description,
-                    VectorRank = vectorRank,
-                    KeywordRank = keywordRank,
-                    RrfScore = score
-                });
+            score.RrfScore +=
+                score.VectorContribution;
         }
 
-        return fused
+        // ------------------------------------------------------------
+        // Keyword results
+        // ------------------------------------------------------------
+
+        for (int i = 0; i < keywordResults.Count; i++)
+        {
+            var keywordResult = keywordResults[i];
+
+            int rank = i + 1;
+
+            var document =
+                keywordResult.Document;
+
+            if (!scores.TryGetValue(
+                    document.Id,
+                    out var score))
+            {
+                score = new FusionScore(document);
+
+                scores[document.Id] = score;
+            }
+
+            score.KeywordRank = rank;
+
+            score.KeywordContribution =
+                keywordWeight /
+                (rankConstant + rank);
+
+            score.RrfScore +=
+                score.KeywordContribution;
+        }
+
+        // ------------------------------------------------------------
+        // Final ranking
+        // ------------------------------------------------------------
+
+        return scores.Values
             .OrderByDescending(x => x.RrfScore)
             .Take(top)
+            .Select(
+                x => new HybridSearchResult
+                {
+                    Id = x.Document.Id,
+                    Name = x.Document.Name,
+                    Category = x.Document.Category,
+                    Price = x.Document.Price,
+                    Description = x.Document.Description,
+
+                    VectorRank = x.VectorRank,
+                    KeywordRank = x.KeywordRank,
+
+                    VectorContribution =
+                        x.VectorContribution,
+
+                    KeywordContribution =
+                        x.KeywordContribution,
+
+                    RrfScore =
+                        x.RrfScore
+                })
             .ToList();
+    }
+
+    private sealed class FusionScore
+    {
+        public FusionScore(
+            HybridSearchCandidate document)
+        {
+            Document = document;
+        }
+
+        public HybridSearchCandidate Document { get; }
+
+        public int? VectorRank { get; set; }
+
+        public int? KeywordRank { get; set; }
+
+        public double VectorContribution { get; set; }
+
+        public double KeywordContribution { get; set; }
+
+        public double RrfScore { get; set; }
     }
 }
