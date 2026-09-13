@@ -4,6 +4,8 @@ public sealed class HybridSearchRequest
 {
     public string Query { get; set; } = string.Empty;
 
+    public string Mode { get; set; } = "hybrid";
+
     public string? Category { get; set; }
 
     public decimal? MinimumPrice { get; set; }

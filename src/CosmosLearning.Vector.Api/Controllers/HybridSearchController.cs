@@ -1,37 +1,21 @@
-﻿using CosmosLearning.Vector.Api.Features.HybridSearch;
+﻿using CosmosLearning.Vector.Api.Infrastructure.CosmosDb;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CosmosLearning.Vector.Api.Controllers;
+namespace CosmosLearning.Vector.Api.Features.HybridSearch;
 
 [ApiController]
 [Route("api/hybrid")]
 public sealed class HybridSearchController : ControllerBase
 {
-    private readonly HybridSearchService _service;
+    private readonly HybridSearchService _searchService;
+    private readonly CosmosHybridRepository _repository;
 
     public HybridSearchController(
-        HybridSearchService service)
+        HybridSearchService searchService,
+        CosmosHybridRepository repository)
     {
-        _service = service;
-    }
-
-    [HttpPost("seed")]
-    public async Task<IActionResult> Seed(
-        [FromQuery] int count = 1000,
-        CancellationToken cancellationToken = default)
-    {
-        int inserted =
-            await _service.SeedAsync(
-                count,
-                cancellationToken);
-
-        return Ok(new
-        {
-            requested = count,
-            inserted,
-            message =
-                "Hybrid search catalog has been embedded with Ollama and stored in Cosmos DB."
-        });
+        _searchService = searchService;
+        _repository = repository;
     }
 
     [HttpPost("search")]
@@ -39,14 +23,14 @@ public sealed class HybridSearchController : ControllerBase
         [FromBody] HybridSearchRequest request,
         CancellationToken cancellationToken)
     {
-        var results =
-            await _service.SearchAsync(
-                request,
-                cancellationToken);
+        var results = await _searchService.SearchAsync(
+            request,
+            cancellationToken);
 
         return Ok(new
         {
             query = request.Query,
+            mode = request.Mode,
             results
         });
     }
