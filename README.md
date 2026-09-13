@@ -286,7 +286,7 @@ The distinction between emulator-compatible application-side hybrid search and n
 │   └── prompt/
 │
 ├── docs/
-│   ├── technical-desing.md
+│   ├── technical-design.md
 │   └── implementation-walkthrough.md
 │
 ├── scripts/
